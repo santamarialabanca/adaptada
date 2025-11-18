@@ -784,13 +784,13 @@ function initConnectGame() {
     const content = getCurrentContent();
     const items = content.items;
 
-    // Crear elementos a la izquierda (ordenados)
+    // Crear elementos en la fila superior (ordenados)
     items.forEach(item => {
         const itemValue = content.display(item);
         const itemElement = document.createElement('div');
         itemElement.className = 'connect-item';
         itemElement.setAttribute('data-item', itemValue);
-        itemElement.setAttribute('data-side', 'left');
+        itemElement.setAttribute('data-side', 'left'); // Mantener 'left' para la fila superior
         itemElement.setAttribute('aria-label', itemValue);
         itemElement.setAttribute('tabindex', '0');
         
@@ -805,14 +805,14 @@ function initConnectGame() {
         leftContainer.appendChild(itemElement);
     });
 
-    // Crear elementos a la derecha (mezclados)
+    // Crear elementos en la fila inferior (mezclados)
     const shuffledItems = [...items].sort(() => Math.random() - 0.5);
     shuffledItems.forEach(item => {
         const itemValue = content.display(item);
         const itemElement = document.createElement('div');
         itemElement.className = 'connect-item';
         itemElement.setAttribute('data-item', itemValue);
-        itemElement.setAttribute('data-side', 'right');
+        itemElement.setAttribute('data-side', 'right'); // Mantener 'right' para la fila inferior
         itemElement.setAttribute('aria-label', itemValue);
         itemElement.setAttribute('tabindex', '0');
         
@@ -909,8 +909,10 @@ function addTouchSupportForConnect(item, leftContainer, rightContainer) {
         // Crear path SVG para dibujar el trazo libre
         const rect = item.getBoundingClientRect();
         const svgRect = svg.getBoundingClientRect();
+        // Si está en la fila superior, empezar desde abajo; si está en la inferior, desde arriba
+        const side = item.getAttribute('data-side');
         const startX = rect.left + rect.width / 2 - svgRect.left;
-        const startY = rect.top + rect.height / 2 - svgRect.top;
+        const startY = side === 'left' ? rect.bottom - svgRect.top : rect.top - svgRect.top;
         
         // Crear path que seguirá el movimiento del dedo
         state.connectState.currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1069,10 +1071,11 @@ function drawConnection(leftItem, rightItem, isCorrect) {
     const rightRect = rightItem.getBoundingClientRect();
     const svgRect = svg.getBoundingClientRect();
 
-    const x1 = leftRect.right - svgRect.left;
-    const y1 = leftRect.top + leftRect.height / 2 - svgRect.top;
-    const x2 = rightRect.left - svgRect.left;
-    const y2 = rightRect.top + rightRect.height / 2 - svgRect.top;
+    // Calcular puntos de conexión: desde el centro del elemento superior hasta el centro del elemento inferior
+    const x1 = leftRect.left + leftRect.width / 2 - svgRect.left;
+    const y1 = leftRect.bottom - svgRect.top;
+    const x2 = rightRect.left + rightRect.width / 2 - svgRect.left;
+    const y2 = rightRect.top - svgRect.top;
 
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', x1);
