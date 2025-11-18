@@ -1,0 +1,1158 @@
+/* Variables CSS */
+:root {
+    --bg-dark: #0a0a0a;
+    --bg-darker: #000000;
+    --bg-card: #1a1a1a;
+    --bg-card-hover: #2a2a2a;
+    --accent-yellow: #ffd700;
+    --accent-orange: #ff8c00;
+    --accent-green: #00ff88;
+    --accent-blue: #00bfff;
+    --accent-pink: #ff69b4;
+    --accent-purple: #9370db;
+    --accent-red: #ff4444;
+    --text-light: #ffffff;
+    --text-muted: #cccccc;
+    --border-color: #333333;
+    --shadow-glow: 0 0 20px rgba(255, 215, 0, 0.5);
+    --transition: all 0.3s ease;
+}
+
+/* Reset y Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    background: linear-gradient(135deg, var(--bg-darker) 0%, var(--bg-dark) 100%);
+    color: var(--text-light);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(0, 191, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Pantallas */
+.screen {
+    display: none;
+    min-height: 100vh;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.screen.active {
+    display: block;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px 20px;
+}
+
+.title {
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-weight: bold;
+    color: var(--accent-yellow);
+    text-shadow: 
+        0 0 10px rgba(255, 215, 0, 0.8),
+        0 0 20px rgba(255, 215, 0, 0.5),
+        0 4px 8px rgba(0, 0, 0, 0.5);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.title i {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.subtitle {
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    color: var(--text-muted);
+}
+
+/* Menú de Juegos */
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+.game-button {
+    background: var(--bg-card);
+    border: 4px solid var(--accent-yellow);
+    border-radius: 20px;
+    padding: 30px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    color: var(--text-light);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.game-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.game-button:hover::before,
+.game-button:active::before {
+    left: 100%;
+}
+
+.game-button:hover,
+.game-button:focus {
+    transform: translateY(-5px) scale(1.02);
+    border-color: var(--accent-orange);
+    box-shadow: var(--shadow-glow);
+    background: var(--bg-card-hover);
+}
+
+.game-button:active {
+    transform: translateY(-2px) scale(0.98);
+}
+
+.button-icon {
+    font-size: 4rem;
+    color: var(--accent-yellow);
+    margin-bottom: 10px;
+}
+
+.button-content h2 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    color: var(--accent-yellow);
+}
+
+.button-content p {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+}
+
+/* Referencia de Números */
+.number-reference {
+    background: var(--bg-card);
+    border: 3px solid var(--accent-blue);
+    border-radius: 20px;
+    padding: 30px;
+    margin-top: 40px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+.number-reference h3 {
+    text-align: center;
+    font-size: 1.8rem;
+    color: var(--accent-blue);
+    margin-bottom: 25px;
+}
+
+.number-strip {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.ref-number {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+    border: 4px solid var(--text-light);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--bg-dark);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    transition: var(--transition);
+    cursor: default;
+}
+
+.ref-number:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: var(--shadow-glow);
+}
+
+/* Game Header */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.game-header h2 {
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    color: var(--accent-yellow);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    flex: 1;
+    text-align: center;
+}
+
+.back-button {
+    background: var(--bg-card);
+    border: 3px solid var(--accent-blue);
+    border-radius: 15px;
+    padding: 15px 25px;
+    color: var(--text-light);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: var(--transition);
+    min-width: 120px;
+    justify-content: center;
+}
+
+.back-button:hover,
+.back-button:focus {
+    background: var(--accent-blue);
+    transform: translateX(-5px);
+    box-shadow: 0 4px 15px rgba(0, 191, 255, 0.5);
+}
+
+.score-display {
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    border: 3px solid var(--text-light);
+    border-radius: 15px;
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--bg-dark);
+    min-width: 100px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 255, 136, 0.4);
+}
+
+/* Instrucciones */
+.game-instructions {
+    background: var(--bg-card);
+    border-left: 5px solid var(--accent-pink);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 1.2rem;
+}
+
+.game-instructions i {
+    color: var(--accent-pink);
+    font-size: 1.5rem;
+}
+
+/* Juego: Arrastrar */
+.drag-game-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 30px;
+}
+
+.drop-zones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.drop-zone {
+    aspect-ratio: 1;
+    background: var(--bg-card);
+    border: 4px dashed var(--accent-blue);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--text-muted);
+    transition: var(--transition);
+    position: relative;
+    min-height: 100px;
+}
+
+.drop-zone.drag-over {
+    border-color: var(--accent-green);
+    background: rgba(0, 255, 136, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.drop-zone.filled {
+    border-style: solid;
+    border-color: var(--accent-green);
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.drop-zone-label {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 0.9rem;
+    color: var(--accent-blue);
+    font-weight: bold;
+}
+
+.drag-items {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.drag-item {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+    border: 4px solid var(--text-light);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--bg-dark);
+    cursor: grab;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    position: relative;
+    min-height: 100px;
+}
+
+.drag-item:active {
+    cursor: grabbing;
+    transform: scale(1.1) rotate(5deg);
+    z-index: 1000;
+    box-shadow: var(--shadow-glow);
+}
+
+.drag-item.dragging {
+    opacity: 0.5;
+    transform: scale(1.15);
+}
+
+.drag-item.placed {
+    opacity: 0.3;
+    cursor: default;
+    transform: scale(0.9);
+}
+
+/* Juego: Unir con Líneas */
+.connect-game-container {
+    position: relative;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    min-height: 500px;
+    margin-bottom: 30px;
+    padding: 20px;
+}
+
+.connection-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.connection-line {
+    stroke: var(--accent-green);
+    stroke-width: 4;
+    fill: none;
+    filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.8));
+    transition: stroke 0.3s;
+}
+
+.connection-line.correct {
+    stroke: var(--accent-green);
+    stroke-width: 5;
+}
+
+.connection-line.incorrect {
+    stroke: var(--accent-red);
+    stroke-width: 5;
+}
+
+.connect-left,
+.connect-right {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 20;
+}
+
+.connect-item {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+    border: 4px solid var(--text-light);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--bg-dark);
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    position: relative;
+}
+
+.connect-item:hover,
+.connect-item:focus {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-glow);
+    border-color: var(--accent-green);
+}
+
+.connect-item.selected {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.8);
+    transform: scale(1.15);
+}
+
+.connect-item.connected {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.connect-item-number {
+    font-size: 3rem;
+}
+
+.connect-item-count {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.dot {
+    width: 20px;
+    height: 20px;
+    background: var(--bg-dark);
+    border-radius: 50%;
+}
+
+/* Juego: Emparejar */
+.match-game-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+    margin-bottom: 30px;
+}
+
+.match-card {
+    aspect-ratio: 1;
+    background: var(--bg-card);
+    border: 4px solid var(--accent-purple);
+    border-radius: 15px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--text-light);
+    position: relative;
+    overflow: hidden;
+    min-height: 120px;
+    box-shadow: 0 4px 15px rgba(147, 112, 219, 0.3);
+}
+
+.match-card::before {
+    content: '?';
+    position: absolute;
+    font-size: 4rem;
+    color: var(--accent-purple);
+    opacity: 0.5;
+}
+
+.match-card.flipped::before {
+    display: none;
+}
+
+.match-card:hover,
+.match-card:focus {
+    transform: scale(1.05);
+    border-color: var(--accent-yellow);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.match-card.flipped {
+    background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+    color: var(--bg-dark);
+    border-color: var(--accent-yellow);
+}
+
+.match-card.matched {
+    opacity: 0.5;
+    cursor: default;
+    border-color: var(--accent-green);
+    background: rgba(0, 255, 136, 0.2);
+}
+
+.match-card-content {
+    display: none;
+}
+
+.match-card.flipped .match-card-content {
+    display: block;
+}
+
+/* Feedback */
+.feedback-message {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border-radius: 15px;
+    margin-top: 20px;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.feedback-message.success {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--accent-green);
+    border: 3px solid var(--accent-green);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.feedback-message.error {
+    background: rgba(255, 68, 68, 0.2);
+    color: var(--accent-red);
+    border: 3px solid var(--accent-red);
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+}
+
+/* Modal de Éxito */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border: 5px solid var(--accent-yellow);
+    border-radius: 25px;
+    padding: 50px;
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: var(--shadow-glow);
+    animation: modalAppear 0.5s ease-out;
+}
+
+@keyframes modalAppear {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.success-icon {
+    font-size: 5rem;
+    color: var(--accent-yellow);
+    margin-bottom: 20px;
+    animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+.modal-content h2 {
+    font-size: 2.5rem;
+    color: var(--accent-yellow);
+    margin-bottom: 15px;
+}
+
+.modal-content p {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    margin-bottom: 30px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.modal-button {
+    background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+    border: 3px solid var(--text-light);
+    border-radius: 15px;
+    padding: 15px 30px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--bg-dark);
+    cursor: pointer;
+    transition: var(--transition);
+    min-width: 150px;
+}
+
+.modal-button:hover,
+.modal-button:focus {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-glow);
+}
+
+.modal-button.secondary {
+    background: var(--bg-card);
+    color: var(--text-light);
+    border-color: var(--accent-blue);
+}
+
+.modal-button.secondary:hover,
+.modal-button.secondary:focus {
+    background: var(--accent-blue);
+}
+
+/* Animaciones */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .drag-game-container {
+        grid-template-columns: 1fr;
+    }
+
+    .connect-game-container {
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .connect-left,
+    .connect-right {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .match-game-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .menu-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .game-button {
+        min-height: 150px;
+        padding: 20px;
+    }
+
+    .button-icon {
+        font-size: 3rem;
+    }
+
+    .number-strip {
+        gap: 10px;
+    }
+
+    .ref-number {
+        width: 60px;
+        height: 60px;
+        font-size: 2rem;
+    }
+}
+
+/* Accesibilidad - Focus visible */
+*:focus-visible {
+    outline: 4px solid var(--accent-yellow);
+    outline-offset: 4px;
+}
+
+/* Juego: Visual con Puntos de Colores */
+.visual-game-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.visual-number-display {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px;
+    background: var(--bg-card);
+    border: 5px solid var(--accent-yellow);
+    border-radius: 20px;
+    box-shadow: var(--shadow-glow);
+}
+
+.big-number {
+    font-size: clamp(6rem, 15vw, 10rem);
+    font-weight: bold;
+    color: var(--accent-yellow);
+    text-shadow: 
+        0 0 20px rgba(255, 215, 0, 0.8),
+        0 0 40px rgba(255, 215, 0, 0.5),
+        0 4px 8px rgba(0, 0, 0, 0.5);
+    line-height: 1;
+}
+
+.visual-dots-section,
+.visual-cards-section {
+    margin-bottom: 40px;
+}
+
+.visual-dots-section h3,
+.visual-cards-section h3 {
+    font-size: 1.8rem;
+    color: var(--accent-blue);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.visual-divider {
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+    margin: 30px 0;
+    border-radius: 2px;
+}
+
+.dots-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 30px;
+    background: var(--bg-card);
+    border: 3px solid var(--accent-blue);
+    border-radius: 20px;
+    min-height: 150px;
+    position: relative;
+}
+
+.visual-dot {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 4px solid var(--text-light);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: var(--transition);
+    position: relative;
+}
+
+.visual-dot:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px currentColor;
+}
+
+.dots-wrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.dot-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 120px;
+}
+
+.visual-drop-zone {
+    width: 120px;
+    min-height: 120px;
+    background: var(--bg-card);
+    border: 4px dashed var(--accent-green);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    position: relative;
+}
+
+.visual-drop-zone.drag-over {
+    border-color: var(--accent-yellow);
+    background: rgba(255, 215, 0, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.visual-drop-zone.filled {
+    border-style: solid;
+    border-color: var(--accent-green);
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    background: var(--bg-card);
+    border: 3px solid var(--accent-purple);
+    border-radius: 20px;
+    min-height: 200px;
+}
+
+.visual-card {
+    background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
+    border: 4px solid var(--text-light);
+    border-radius: 15px;
+    cursor: grab;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.visual-card:active {
+    cursor: grabbing;
+    transform: scale(1.1) rotate(5deg);
+    z-index: 1000;
+    box-shadow: var(--shadow-glow);
+}
+
+.visual-card.dragging {
+    opacity: 0.5;
+    transform: scale(1.15);
+}
+
+.visual-card.placed {
+    opacity: 0.3;
+    cursor: default;
+    transform: scale(0.9);
+}
+
+.visual-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    width: 100%;
+}
+
+.visual-card-icon {
+    font-size: 3rem;
+    color: var(--bg-dark);
+    margin-bottom: 5px;
+}
+
+.visual-card-dots {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.visual-card-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-dark);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.visual-card.placed-card {
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+    cursor: default;
+    transform: scale(1);
+}
+
+/* Juego: Visual - Referencia y ordenamiento */
+.visual-reference-line {
+    margin-bottom: 30px;
+}
+
+.visual-reference-dot {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 3px solid var(--text-light);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.visual-ordering-zone {
+    margin-top: 20px;
+}
+
+.visual-ordering-slot {
+    width: 120px;
+    height: 120px;
+    background: var(--bg-card);
+    border: 4px dashed var(--accent-green);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    position: relative;
+}
+
+.visual-ordering-slot.drag-over {
+    border-color: var(--accent-yellow);
+    background: rgba(255, 215, 0, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.visual-ordering-slot.filled {
+    border-style: solid;
+    border-color: var(--accent-green);
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.visual-card-number {
+    text-align: center;
+}
+
+/* Juego: Vocales y Consonantes */
+.letters-game-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.letters-section {
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 30px;
+    border: 3px solid;
+}
+
+.letters-section:first-child {
+    border-color: #ff4444;
+}
+
+.letters-section:last-child {
+    border-color: #00bfff;
+}
+
+.vowel-title,
+.consonant-title {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.vowel-title {
+    color: #ff4444;
+}
+
+.consonant-title {
+    color: #00bfff;
+}
+
+.letters-drop-zone {
+    min-height: 300px;
+    border: 4px dashed;
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-start;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.vowel-zone {
+    border-color: #ff4444;
+    background: rgba(255, 68, 68, 0.1);
+}
+
+.consonant-zone {
+    border-color: #00bfff;
+    background: rgba(0, 191, 255, 0.1);
+}
+
+.letters-drop-zone.drag-over {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px currentColor;
+}
+
+.letters-items-container {
+    margin-bottom: 30px;
+}
+
+.letters-items-container h3 {
+    text-align: center;
+    font-size: 1.5rem;
+    color: var(--accent-yellow);
+    margin-bottom: 20px;
+}
+
+.letters-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+    background: var(--bg-card);
+    border: 3px solid var(--accent-purple);
+    border-radius: 20px;
+}
+
+.letter-item {
+    width: 100px;
+    height: 100px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.letter-item:active {
+    cursor: grabbing;
+    transform: scale(1.1) rotate(5deg);
+    z-index: 1000;
+    box-shadow: 0 0 20px currentColor;
+}
+
+.letter-item.dragging {
+    opacity: 0.5;
+    transform: scale(1.15);
+}
+
+.letter-item.placed {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.placed-letter {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 5px;
+}
+
+/* Prevenir zoom en doble toque en iOS */
+button, .drag-item, .connect-item, .match-card, .visual-card, .letter-item {
+    touch-action: manipulation;
+}
+

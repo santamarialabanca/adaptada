@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Aprende los Números - Juegos Educativos</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Menú Principal -->
+    <div id="main-menu" class="screen active">
+        <div class="container">
+            <header class="header">
+                <h1 class="title">
+                    <i class="fas fa-star"></i>
+                    Aprende los Números
+                    <i class="fas fa-star"></i>
+                </h1>
+                <p class="subtitle">Elige un juego para comenzar</p>
+            </header>
+
+            <div class="menu-grid">
+                <button class="game-button" data-game="drag" aria-label="Juego de arrastrar números">
+                    <div class="button-icon">
+                        <i class="fas fa-hand-paper"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Arrastrar</h2>
+                        <p>Arrastra los números al lugar correcto</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="connect" aria-label="Juego de unir con líneas">
+                    <div class="button-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Unir con Líneas</h2>
+                        <p>Une cada número con su cantidad</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="match" aria-label="Juego de emparejar">
+                    <div class="button-icon">
+                        <i class="fas fa-puzzle-piece"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Emparejar</h2>
+                        <p>Encuentra las parejas iguales</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="visual" aria-label="Juego visual con puntos de colores">
+                    <div class="button-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Puntos de Colores</h2>
+                        <p>Ordena siguiendo la referencia de colores</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="letters" aria-label="Juego de vocales y consonantes">
+                    <div class="button-icon">
+                        <i class="fas fa-font"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Vocales y Consonantes</h2>
+                        <p>Aprende las vocales y consonantes</p>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Referencia visual de números -->
+            <div class="number-reference">
+                <h3>Los números del 1 al 9</h3>
+                <div class="number-strip">
+                    <div class="ref-number" data-num="1">1</div>
+                    <div class="ref-number" data-num="2">2</div>
+                    <div class="ref-number" data-num="3">3</div>
+                    <div class="ref-number" data-num="4">4</div>
+                    <div class="ref-number" data-num="5">5</div>
+                    <div class="ref-number" data-num="6">6</div>
+                    <div class="ref-number" data-num="7">7</div>
+                    <div class="ref-number" data-num="8">8</div>
+                    <div class="ref-number" data-num="9">9</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Juego: Arrastrar -->
+    <div id="game-drag" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Arrastra los números</h2>
+            <div class="score-display">
+                <span id="drag-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Arrastra cada número a su casilla correcta</p>
+        </div>
+
+        <div class="drag-game-container">
+            <div class="drop-zones">
+                <!-- Las zonas de destino se generan dinámicamente -->
+            </div>
+            <div class="drag-items">
+                <!-- Los números arrastrables se generan dinámicamente -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="drag-feedback"></div>
+    </div>
+
+    <!-- Juego: Unir con Líneas -->
+    <div id="game-connect" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Une con líneas</h2>
+            <div class="score-display">
+                <span id="connect-score">0</span> / 9
+            </div>
+        </div>
+
+            <div class="game-instructions">
+                <i class="fas fa-info-circle"></i>
+                <p>Toca un número de la izquierda y luego el mismo número de la derecha para unirlos</p>
+            </div>
+
+        <div class="connect-game-container">
+            <svg id="connect-svg" class="connection-layer"></svg>
+            <div class="connect-left">
+                <!-- Números se generan dinámicamente -->
+            </div>
+            <div class="connect-right">
+                <!-- Cantidades se generan dinámicamente -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="connect-feedback"></div>
+    </div>
+
+    <!-- Juego: Emparejar -->
+    <div id="game-match" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Empareja los números</h2>
+            <div class="score-display">
+                <span id="match-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Toca dos tarjetas para encontrar las parejas iguales</p>
+        </div>
+
+        <div class="match-game-container">
+            <!-- Las tarjetas se generan dinámicamente -->
+        </div>
+
+        <div class="feedback-message" id="match-feedback"></div>
+    </div>
+
+    <!-- Juego: Visual con Puntos de Colores -->
+    <div id="game-visual" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Puntos de Colores</h2>
+            <div class="score-display">
+                <span id="visual-score">0</span> / 9
+            </div>
+        </div>
+
+            <div class="game-instructions">
+                <i class="fas fa-info-circle"></i>
+                <p>Mira la línea de referencia de colores arriba y ordena los elementos en los espacios de abajo</p>
+            </div>
+
+        <div class="visual-game-container">
+            <!-- Número grande arriba -->
+            <div class="visual-number-display">
+                <div class="big-number" id="visual-big-number">1</div>
+            </div>
+
+            <!-- Sección de referencia visual y ordenamiento -->
+            <div class="visual-dots-section">
+                <h3>Línea de Referencia de Colores</h3>
+                <div class="dots-container" id="visual-dots">
+                    <!-- La línea de referencia y zona de ordenamiento se generan dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Línea divisoria -->
+            <div class="visual-divider"></div>
+
+            <!-- Sección de elementos para ordenar -->
+            <div class="visual-cards-section">
+                <h3>Elementos para Ordenar</h3>
+                <div class="cards-container" id="visual-cards">
+                    <!-- Los elementos se generan dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <div class="feedback-message" id="visual-feedback"></div>
+    </div>
+
+    <!-- Juego: Vocales y Consonantes -->
+    <div id="game-letters" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Vocales y Consonantes</h2>
+            <div class="score-display">
+                <span id="letters-score">0</span> / 26
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Arrastra las letras a su lugar correcto: vocales en rojo, consonantes en azul</p>
+        </div>
+
+        <div class="letters-game-container">
+            <!-- Zona de vocales -->
+            <div class="letters-section">
+                <h3 class="vowel-title">
+                    <i class="fas fa-circle" style="color: #ff4444;"></i>
+                    Vocales (Rojo)
+                </h3>
+                <div class="letters-drop-zone vowel-zone" id="vowel-zone">
+                    <!-- Las vocales se colocarán aquí -->
+                </div>
+            </div>
+
+            <!-- Zona de consonantes -->
+            <div class="letters-section">
+                <h3 class="consonant-title">
+                    <i class="fas fa-circle" style="color: #00bfff;"></i>
+                    Consonantes (Azul)
+                </h3>
+                <div class="letters-drop-zone consonant-zone" id="consonant-zone">
+                    <!-- Las consonantes se colocarán aquí -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Letras para arrastrar -->
+        <div class="letters-items-container">
+            <h3>Arrastra las letras</h3>
+            <div class="letters-items" id="letters-items">
+                <!-- Las letras se generan dinámicamente -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="letters-feedback"></div>
+    </div>
+
+    <!-- Mensaje de éxito -->
+    <div id="success-modal" class="modal">
+        <div class="modal-content">
+            <div class="success-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <h2>¡Excelente trabajo!</h2>
+            <p>Has completado todos los números</p>
+            <div class="modal-buttons">
+                <button class="modal-button" id="play-again">Jugar de nuevo</button>
+                <button class="modal-button secondary" id="back-to-menu">Volver al menú</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
