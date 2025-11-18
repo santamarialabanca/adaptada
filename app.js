@@ -32,7 +32,8 @@ const state = {
         completed: new Set(),
         drawing: false,
         startElement: null,
-        currentLine: null
+        currentLine: null,
+        pathPoints: []
     },
     matchState: {
         flipped: [],
@@ -798,15 +799,7 @@ function initConnectGame() {
         contentDiv.textContent = itemValue.toUpperCase();
         itemElement.appendChild(contentDiv);
         
-        itemElement.addEventListener('click', () => handleConnectClick(itemElement));
-        itemElement.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleConnectClick(itemElement);
-            }
-        });
-        
-        // Soporte táctil para dibujar líneas
+        // Solo soporte táctil para dibujar líneas (sin selección por clic)
         addTouchSupportForConnect(itemElement, leftContainer, rightContainer);
         
         leftContainer.appendChild(itemElement);
@@ -828,15 +821,7 @@ function initConnectGame() {
         contentDiv.textContent = itemValue.toUpperCase();
         itemElement.appendChild(contentDiv);
         
-        itemElement.addEventListener('click', () => handleConnectClick(itemElement));
-        itemElement.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleConnectClick(itemElement);
-            }
-        });
-        
-        // Soporte táctil para dibujar líneas
+        // Solo soporte táctil para dibujar líneas (sin selección por clic)
         addTouchSupportForConnect(itemElement, leftContainer, rightContainer);
         
         rightContainer.appendChild(itemElement);
@@ -910,6 +895,7 @@ function addTouchSupportForConnect(item, leftContainer, rightContainer) {
     
     item.addEventListener('touchstart', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         if (item.classList.contains('connected')) return;
         if (state.connectState.drawing) return; // Ya hay un dibujo en curso
         
@@ -920,21 +906,27 @@ function addTouchSupportForConnect(item, leftContainer, rightContainer) {
         // Resaltar elemento inicial
         item.classList.add('selected');
         
-        // Crear línea temporal para dibujar
+        // Crear path SVG para dibujar el trazo libre
         const rect = item.getBoundingClientRect();
         const svgRect = svg.getBoundingClientRect();
         const startX = rect.left + rect.width / 2 - svgRect.left;
         const startY = rect.top + rect.height / 2 - svgRect.top;
         
-        state.connectState.currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        state.connectState.currentLine.setAttribute('x1', startX);
-        state.connectState.currentLine.setAttribute('y1', startY);
-        state.connectState.currentLine.setAttribute('x2', startX);
-        state.connectState.currentLine.setAttribute('y2', startY);
+        // Crear path que seguirá el movimiento del dedo
+        state.connectState.currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         state.connectState.currentLine.classList.add('connection-line');
         state.connectState.currentLine.classList.add('drawing');
         state.connectState.currentLine.style.stroke = '#ffd700';
-        state.connectState.currentLine.style.strokeWidth = '4';
+        state.connectState.currentLine.style.strokeWidth = '5';
+        state.connectState.currentLine.style.fill = 'none';
+        state.connectState.currentLine.style.opacity = '0.9';
+        state.connectState.currentLine.style.strokeLinecap = 'round';
+        state.connectState.currentLine.style.strokeLinejoin = 'round';
+        
+        // Inicializar el path con el punto de inicio
+        state.connectState.pathPoints = [`M ${startX} ${startY}`];
+        state.connectState.currentLine.setAttribute('d', state.connectState.pathPoints.join(' '));
+        
         svg.appendChild(state.connectState.currentLine);
     }, { passive: false });
 }
@@ -949,6 +941,7 @@ function setupGlobalTouchListeners() {
     document.addEventListener('touchmove', (e) => {
         if (!state.connectState.drawing || !state.connectState.currentLine) return;
         e.preventDefault();
+        e.stopPropagation();
         
         const touch = e.touches[0];
         const svg = document.querySelector('#connect-svg');
@@ -958,27 +951,50 @@ function setupGlobalTouchListeners() {
         const currentX = touch.clientX - svgRect.left;
         const currentY = touch.clientY - svgRect.top;
         
-        // Actualizar línea mientras se dibuja
-        const startX = parseFloat(state.connectState.currentLine.getAttribute('x1'));
-        const startY = parseFloat(state.connectState.currentLine.getAttribute('y1'));
-        state.connectState.currentLine.setAttribute('x2', currentX);
-        state.connectState.currentLine.setAttribute('y2', currentY);
+        // Agregar punto al path para seguir el movimiento del dedo
+        if (!state.connectState.pathPoints) {
+            state.connectState.pathPoints = [];
+        }
+        
+        // Usar L (line to) para conectar puntos suavemente
+        state.connectState.pathPoints.push(`L ${currentX} ${currentY}`);
+        state.connectState.currentLine.setAttribute('d', state.connectState.pathPoints.join(' '));
+        
+        // Resaltar el elemento sobre el que está pasando el dedo
+        const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
+        const hoverElement = elementBelow?.closest('.connect-item');
+        
+        // Remover resaltado de todos los elementos
+        document.querySelectorAll('.connect-item').forEach(el => {
+            if (el !== state.connectState.startElement && !el.classList.contains('connected')) {
+                el.classList.remove('hover-target');
+            }
+        });
+        
+        // Resaltar el elemento objetivo si es válido
+        if (hoverElement && hoverElement !== state.connectState.startElement && !hoverElement.classList.contains('connected')) {
+            const startSide = state.connectState.startElement.getAttribute('data-side');
+            const hoverSide = hoverElement.getAttribute('data-side');
+            if (startSide !== hoverSide) {
+                hoverElement.classList.add('hover-target');
+            }
+        }
     }, { passive: false });
     touchMoveListenerAdded = true;
     
     document.addEventListener('touchend', (e) => {
         if (!state.connectState.drawing || !state.connectState.startElement) return;
         e.preventDefault();
+        e.stopPropagation();
         
         const touch = e.changedTouches[0];
         const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
         const endElement = elementBelow?.closest('.connect-item');
         
-        // Eliminar línea temporal de dibujo
-        if (state.connectState.currentLine) {
-            state.connectState.currentLine.remove();
-            state.connectState.currentLine = null;
-        }
+        // Remover resaltado de todos los elementos
+        document.querySelectorAll('.connect-item').forEach(el => {
+            el.classList.remove('hover-target');
+        });
         
         const startElement = state.connectState.startElement;
         
@@ -990,6 +1006,12 @@ function setupGlobalTouchListeners() {
             
             // Solo permitir conectar si son de lados diferentes
             if (startSide !== endSide) {
+                // Eliminar línea temporal de dibujo
+                if (state.connectState.currentLine) {
+                    state.connectState.currentLine.remove();
+                    state.connectState.currentLine = null;
+                }
+                
                 if (startItem === endItem) {
                     // Correcto
                     drawConnection(startElement, endElement, true);
@@ -1008,22 +1030,35 @@ function setupGlobalTouchListeners() {
                         setTimeout(() => showSuccessModal(), 1000);
                     }
                 } else {
-                    // Incorrecto
+                    // Incorrecto - mostrar línea roja temporalmente
                     drawConnection(startElement, endElement, false);
                     setTimeout(() => {
                         const svg = document.querySelector('#connect-svg');
-                        const lastLine = svg.querySelector('.connection-line:last-child');
+                        const lastLine = svg.querySelector('.connection-line.incorrect:last-child');
                         if (lastLine) lastLine.remove();
                     }, 1000);
                     
                     showFeedback('connect-feedback', 'INTÉNTALO DE NUEVO', 'error');
                 }
+            } else {
+                // Mismo lado - eliminar línea temporal sin conectar
+                if (state.connectState.currentLine) {
+                    state.connectState.currentLine.remove();
+                    state.connectState.currentLine = null;
+                }
+            }
+        } else {
+            // No se soltó sobre un elemento válido - eliminar línea temporal
+            if (state.connectState.currentLine) {
+                state.connectState.currentLine.remove();
+                state.connectState.currentLine = null;
             }
         }
         
         startElement.classList.remove('selected');
         state.connectState.drawing = false;
         state.connectState.startElement = null;
+        state.connectState.pathPoints = [];
     }, { passive: false });
     touchEndListenerAdded = true;
 }
@@ -1057,6 +1092,7 @@ function resetConnectGame() {
     state.connectState.connections.clear();
     state.connectState.drawing = false;
     state.connectState.startElement = null;
+    state.connectState.pathPoints = [];
     if (state.connectState.currentLine) {
         state.connectState.currentLine.remove();
         state.connectState.currentLine = null;
