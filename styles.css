@@ -33,9 +33,12 @@ body {
     font-family: 'Arial', 'Helvetica', sans-serif;
     background: linear-gradient(135deg, var(--bg-darker) 0%, var(--bg-dark) 100%);
     color: var(--text-light);
-    min-height: 100vh;
-    overflow-x: hidden;
-    position: relative;
+    height: 100vh;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
 }
 
 /* Prevenir scroll durante arrastre en iPad */
@@ -64,10 +67,13 @@ body::before {
 /* Pantallas */
 .screen {
     display: none;
-    min-height: 100vh;
-    padding: 20px;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px;
     position: relative;
     z-index: 1;
+    box-sizing: border-box;
 }
 
 .screen.active {
@@ -84,22 +90,22 @@ body::before {
 /* Header */
 .header {
     text-align: center;
-    margin-bottom: 40px;
-    padding: 30px 20px;
+    margin-bottom: 15px;
+    padding: 10px 15px;
 }
 
 .title {
-    font-size: clamp(2.5rem, 8vw, 4rem);
+    font-size: clamp(1.8rem, 4vh, 2.5rem);
     font-weight: bold;
     color: var(--accent-yellow);
-    margin-bottom: 15px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 20px;
+    gap: 10px;
     flex-wrap: wrap;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
 }
 
 .title i {
@@ -107,41 +113,43 @@ body::before {
 }
 
 .subtitle {
-    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    font-size: clamp(0.9rem, 2vh, 1.2rem);
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     font-weight: 600;
 }
 
 /* Selector de Categorías */
 .category-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 30px;
-    margin-bottom: 50px;
-    max-width: 1000px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+    max-width: 100%;
     margin-left: auto;
     margin-right: auto;
+    padding: 0 10px;
 }
 
 .category-button {
     background: var(--bg-card);
-    border: 4px solid var(--accent-yellow);
-    border-radius: 20px;
-    padding: 40px 30px;
+    border: 3px solid var(--accent-yellow);
+    border-radius: 15px;
+    padding: 15px 10px;
     cursor: pointer;
     transition: var(--transition);
     text-align: center;
     color: var(--text-light);
     position: relative;
     overflow: hidden;
-    min-height: 250px;
+    min-height: 0;
+    max-height: calc((100vh - 200px) / 2);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 25px;
+    gap: 8px;
     animation: categoryAppear 0.5s ease-out;
 }
 
@@ -184,9 +192,9 @@ body::before {
 }
 
 .category-icon {
-    font-size: 5rem;
+    font-size: clamp(2.5rem, 5vh, 3.5rem);
     color: var(--accent-yellow);
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     animation: categoryIconPulse 2s ease-in-out infinite;
 }
 
@@ -200,47 +208,49 @@ body::before {
 }
 
 .category-content h2 {
-    font-size: 2rem;
-    margin-bottom: 10px;
+    font-size: clamp(1.1rem, 2.5vh, 1.4rem);
+    margin-bottom: 5px;
     color: var(--accent-yellow);
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     font-weight: bold;
 }
 
 .category-content p {
-    font-size: 1.2rem;
+    font-size: clamp(0.75rem, 1.5vh, 0.9rem);
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     font-weight: 600;
 }
 
 /* Menú de Juegos */
 .menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 30px;
-    margin-bottom: 50px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 10px;
+    padding: 0 5px;
 }
 
 .game-button {
     background: var(--bg-card);
-    border: 4px solid var(--accent-yellow);
-    border-radius: 20px;
-    padding: 30px;
+    border: 3px solid var(--accent-yellow);
+    border-radius: 15px;
+    padding: 12px 8px;
     cursor: pointer;
     transition: var(--transition);
     text-align: center;
     color: var(--text-light);
     position: relative;
     overflow: hidden;
-    min-height: 200px;
+    min-height: 0;
+    max-height: calc((100vh - 250px) / 3);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 20px;
+    gap: 8px;
     animation: buttonAppear 0.6s ease-out;
 }
 
@@ -283,9 +293,9 @@ body::before {
 }
 
 .button-icon {
-    font-size: 4rem;
+    font-size: clamp(2rem, 4vh, 2.5rem);
     color: var(--accent-yellow);
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     animation: iconFloat 3s ease-in-out infinite;
 }
 
@@ -299,40 +309,40 @@ body::before {
 }
 
 .button-content h2 {
-    font-size: 1.8rem;
-    margin-bottom: 10px;
+    font-size: clamp(0.85rem, 1.8vh, 1rem);
+    margin-bottom: 3px;
     color: var(--accent-yellow);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     font-weight: bold;
 }
 
 .button-content p {
-    font-size: 1.1rem;
+    font-size: clamp(0.65rem, 1.3vh, 0.75rem);
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 }
 
 /* Referencia de Números */
 .number-reference {
     background: var(--bg-card);
     border: 3px solid var(--accent-blue);
-    border-radius: 20px;
-    padding: 25px 15px;
-    margin: 30px auto;
+    border-radius: 15px;
+    padding: 10px 8px;
+    margin: 10px auto;
     max-width: 100%;
-    width: calc(100% - 40px);
+    width: calc(100% - 20px);
     overflow: visible;
 }
 
 .number-reference h3 {
     text-align: center;
-    font-size: 1.8rem;
+    font-size: clamp(1rem, 2vh, 1.2rem);
     color: var(--accent-blue);
-    margin-bottom: 25px;
+    margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     font-weight: bold;
 }
 
@@ -341,13 +351,13 @@ body::before {
     justify-content: center;
     align-items: center;
     flex-wrap: nowrap;
-    gap: 12px;
+    gap: 8px;
     overflow-x: auto;
     overflow-y: visible;
     scrollbar-width: thin;
     scrollbar-color: var(--accent-yellow) var(--bg-card);
     -webkit-overflow-scrolling: touch;
-    padding: 10px 5px;
+    padding: 5px 3px;
     width: 100%;
     min-width: 100%;
 }
@@ -372,24 +382,24 @@ body::before {
 }
 
 .ref-number {
-    min-width: 70px;
-    width: 70px;
-    min-height: 70px;
-    height: 70px;
-    padding: 8px 4px;
+    min-width: 50px;
+    width: 50px;
+    min-height: 50px;
+    height: 50px;
+    padding: 4px 2px;
     background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
-    border: 3px solid var(--text-light);
-    border-radius: 15px;
+    border: 2px solid var(--text-light);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: clamp(1.1rem, 2vh, 1.3rem);
     font-weight: bold;
     color: var(--bg-dark);
     transition: var(--transition);
     cursor: default;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     text-align: center;
     word-break: break-word;
     line-height: 1.2;
@@ -450,37 +460,38 @@ body::before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 8px;
+    padding: 5px;
 }
 
 .game-header h2 {
-    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    font-size: clamp(1.2rem, 3vh, 1.6rem);
     color: var(--accent-yellow);
     flex: 1;
     text-align: center;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     font-weight: bold;
 }
 
 .back-button {
     background: var(--bg-card);
-    border: 3px solid var(--accent-blue);
-    border-radius: 15px;
-    padding: 15px 25px;
+    border: 2px solid var(--accent-blue);
+    border-radius: 10px;
+    padding: 8px 12px;
     color: var(--text-light);
-    font-size: 1.2rem;
+    font-size: clamp(0.75rem, 1.5vh, 0.9rem);
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 5px;
     transition: var(--transition);
-    min-width: 120px;
+    min-width: 80px;
     justify-content: center;
 }
 
@@ -492,13 +503,13 @@ body::before {
 
 .score-display {
     background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
-    border: 3px solid var(--text-light);
-    border-radius: 15px;
-    padding: 15px 30px;
-    font-size: 1.5rem;
+    border: 2px solid var(--text-light);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: clamp(0.9rem, 2vh, 1.1rem);
     font-weight: bold;
     color: var(--bg-dark);
-    min-width: 100px;
+    min-width: 70px;
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -527,54 +538,57 @@ body::before {
 /* Instrucciones */
 .game-instructions {
     background: var(--bg-card);
-    border-left: 5px solid var(--accent-pink);
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 30px;
+    border-left: 3px solid var(--accent-pink);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
-    gap: 15px;
-    font-size: 1.2rem;
+    gap: 8px;
+    font-size: clamp(0.7rem, 1.5vh, 0.85rem);
 }
 
 .game-instructions p {
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     font-weight: 600;
 }
 
 .game-instructions i {
     color: var(--accent-pink);
-    font-size: 1.5rem;
+    font-size: clamp(0.9rem, 2vh, 1.1rem);
 }
 
 /* Juego: Arrastrar */
 .drag-game-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 40px;
-    margin-bottom: 30px;
+    gap: 12px;
+    margin-bottom: 8px;
+    max-height: calc(100vh - 250px);
+    overflow: hidden;
 }
 
 .drop-zones {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    gap: 8px;
 }
 
 .drop-zone {
     aspect-ratio: 1;
     background: var(--bg-card);
-    border: 4px dashed var(--accent-blue);
-    border-radius: 15px;
+    border: 2px dashed var(--accent-blue);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
+    font-size: clamp(1.2rem, 2.5vh, 1.5rem);
     color: var(--text-muted);
     transition: var(--transition);
     position: relative;
-    min-height: 100px;
+    min-height: 0;
+    max-height: calc((100vh - 300px) / 3);
     animation: dropZoneAppear 0.5s ease-out;
 }
 
@@ -626,24 +640,25 @@ body::before {
 .drag-items {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
+    gap: 8px;
 }
 
 .drag-item {
     aspect-ratio: 1;
     background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
-    border: 4px solid var(--text-light);
-    border-radius: 15px;
+    border: 2px solid var(--text-light);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: clamp(1.5rem, 3vh, 2rem);
     font-weight: bold;
     color: var(--bg-dark);
     cursor: grab;
     transition: var(--transition);
     position: relative;
-    min-height: 100px;
+    min-height: 0;
+    max-height: calc((100vh - 300px) / 3);
     animation: itemAppear 0.5s ease-out;
 }
 
@@ -757,21 +772,21 @@ body::before {
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 20px;
+    gap: 8px;
     z-index: 20;
     width: 100%;
 }
 
 .connect-item {
-    width: 120px;
-    height: 120px;
+    width: clamp(70px, 12vw, 90px);
+    height: clamp(70px, 12vw, 90px);
     background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
-    border: 4px solid var(--text-light);
-    border-radius: 15px;
+    border: 2px solid var(--text-light);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: clamp(1.5rem, 3vh, 2rem);
     font-weight: bold;
     color: var(--bg-dark);
     cursor: pointer;
@@ -835,35 +850,39 @@ body::before {
 /* Juego: Emparejar */
 .match-game-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 20px;
-    max-width: 900px;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+    max-width: 100%;
     margin: 0 auto;
-    margin-bottom: 30px;
+    margin-bottom: 8px;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    padding: 5px;
 }
 
 .match-card {
     aspect-ratio: 1;
     background: var(--bg-card);
-    border: 4px solid var(--accent-purple);
-    border-radius: 15px;
+    border: 2px solid var(--accent-purple);
+    border-radius: 10px;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: clamp(1.5rem, 3vh, 2rem);
     font-weight: bold;
     color: var(--text-light);
     position: relative;
     overflow: hidden;
-    min-height: 120px;
+    min-height: 0;
+    max-height: calc((100vh - 300px) / 4);
 }
 
 .match-card::before {
     content: '?';
     position: absolute;
-    font-size: 4rem;
+    font-size: clamp(2rem, 4vh, 2.5rem);
     color: var(--accent-purple);
     opacity: 0.5;
 }
@@ -902,12 +921,12 @@ body::before {
 /* Feedback */
 .feedback-message {
     text-align: center;
-    padding: 25px;
-    font-size: 1.8rem;
+    padding: 8px 10px;
+    font-size: clamp(0.9rem, 2vh, 1.1rem);
     font-weight: bold;
-    border-radius: 20px;
-    margin-top: 20px;
-    min-height: 70px;
+    border-radius: 10px;
+    margin-top: 8px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -931,14 +950,14 @@ body::before {
 .feedback-message.success {
     background: linear-gradient(135deg, rgba(0, 255, 136, 0.3), rgba(0, 255, 136, 0.1));
     color: var(--accent-green);
-    border: 4px solid var(--accent-green);
+    border: 2px solid var(--accent-green);
     animation: feedbackSlideIn 0.4s ease-out, successPulse 0.6s ease-out 0.4s;
 }
 
 .feedback-message.error {
     background: linear-gradient(135deg, rgba(255, 68, 68, 0.3), rgba(255, 68, 68, 0.1));
     color: var(--accent-red);
-    border: 4px solid var(--accent-red);
+    border: 2px solid var(--accent-red);
     animation: feedbackSlideIn 0.4s ease-out, errorShake 0.5s ease-out 0.4s;
 }
 
@@ -993,15 +1012,17 @@ body::before {
 
 .modal-content {
     background: linear-gradient(135deg, var(--bg-card), var(--bg-card-hover));
-    border: 6px solid var(--accent-yellow);
-    border-radius: 30px;
-    padding: 50px 40px;
+    border: 3px solid var(--accent-yellow);
+    border-radius: 15px;
+    padding: 20px 15px;
     text-align: center;
-    max-width: 550px;
+    max-width: 90%;
     width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
     animation: modalAppear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 .modal-content::before {
@@ -1040,9 +1061,9 @@ body::before {
 }
 
 .success-icon {
-    font-size: 6rem;
+    font-size: clamp(3rem, 6vh, 4rem);
     color: var(--accent-yellow);
-    margin-bottom: 30px;
+    margin-bottom: 15px;
     animation: bounce 1s ease-in-out infinite, rotateGlow 3s ease-in-out infinite;
     position: relative;
 }
@@ -1095,21 +1116,21 @@ body::before {
 }
 
 .modal-content h2 {
-    font-size: clamp(2rem, 5vw, 3rem);
+    font-size: clamp(1.2rem, 3vh, 1.6rem);
     color: var(--accent-yellow);
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     position: relative;
     z-index: 1;
 }
 
 .modal-content p {
-    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    font-size: clamp(0.9rem, 2vh, 1.1rem);
     color: var(--text-light);
-    margin-bottom: 35px;
+    margin-bottom: 15px;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     font-weight: 600;
     position: relative;
     z-index: 1;
@@ -1117,22 +1138,22 @@ body::before {
 
 .modal-buttons {
     display: flex;
-    gap: 20px;
+    gap: 10px;
     justify-content: center;
     flex-wrap: wrap;
 }
 
 .modal-button {
     background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
-    border: 3px solid var(--text-light);
-    border-radius: 15px;
-    padding: 15px 30px;
-    font-size: 1.3rem;
+    border: 2px solid var(--text-light);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: clamp(0.85rem, 1.8vh, 1rem);
     font-weight: bold;
     color: var(--bg-dark);
     cursor: pointer;
     transition: var(--transition);
-    min-width: 150px;
+    min-width: 100px;
 }
 
 .modal-button:hover,
@@ -1173,21 +1194,43 @@ body::before {
     animation: shake 0.5s ease-in-out;
 }
 
-/* Responsive */
+/* Responsive - iPad optimizations */
+@media (max-width: 1024px) and (min-width: 768px) {
+    .screen {
+        padding: 8px;
+    }
+    
+    .header {
+        margin-bottom: 10px;
+        padding: 8px 10px;
+    }
+    
+    .menu-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    
+    .category-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+}
+
 @media (max-width: 768px) {
     .drag-game-container {
         grid-template-columns: 1fr;
+        gap: 10px;
     }
 
     .connect-left,
     .connect-right {
-        gap: 15px;
+        gap: 8px;
     }
     
     .connect-item {
-        width: 100px;
-        height: 100px;
-        font-size: 2.5rem;
+        width: clamp(70px, 12vw, 90px);
+        height: clamp(70px, 12vw, 90px);
+        font-size: clamp(1.5rem, 3vh, 2rem);
     }
 
     .match-game-container {
