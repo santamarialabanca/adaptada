@@ -1,5 +1,6 @@
 // Estado global
 const state = {
+    currentCategory: 'numbers', // 'numbers', 'letters', 'animals', 'colors'
     currentGame: null,
     scores: {
         drag: 0,
@@ -15,7 +16,10 @@ const state = {
         quiz: 0,
         group: 0,
         complete: 0,
-        cards: 0
+        cards: 0,
+        memory: 0,
+        pairing: 0,
+        classification: 0
     },
     dragState: {
         numbers: [],
@@ -97,6 +101,24 @@ const state = {
         targetNumber: 1,
         found: new Set()
     },
+    memoryState: {
+        items: [],
+        shownItems: [],
+        selectedItems: new Set(),
+        phase: 'display', // 'display' or 'select'
+        timer: null,
+        timeLeft: 5
+    },
+    pairingState: {
+        currentPair: null,
+        completed: new Set(),
+        pairs: []
+    },
+    classificationState: {
+        items: [],
+        boxes: [],
+        placed: new Map()
+    },
     touchState: {
         activeTouch: null,
         draggedElement: null,
@@ -109,6 +131,35 @@ const state = {
 
 // Números del 1 al 9
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+// Contenido por categoría
+const CONTENT_BY_CATEGORY = {
+    numbers: {
+        title: 'LOS NÚMEROS DEL 1 AL 9',
+        items: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        display: (item) => item.toString()
+    },
+    letters: {
+        title: 'LAS LETRAS',
+        items: ['A', 'E', 'I', 'O', 'U', 'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'],
+        display: (item) => item
+    },
+    animals: {
+        title: 'LOS ANIMALES',
+        items: ['PERRO', 'GATO', 'PEZ', 'PAJARO', 'CABALLO', 'VACA', 'OVEJA', 'CERDO', 'CONEJO'],
+        display: (item) => item
+    },
+    colors: {
+        title: 'LOS COLORES',
+        items: ['ROJO', 'AZUL', 'AMARILLO', 'VERDE', 'NARANJA', 'ROSA', 'MORADO', 'NEGRO', 'BLANCO'],
+        display: (item) => item
+    }
+};
+
+// Obtener contenido actual según categoría
+function getCurrentContent() {
+    return CONTENT_BY_CATEGORY[state.currentCategory] || CONTENT_BY_CATEGORY.numbers;
+}
 
 // ========== UTILIDADES TÁCTILES PARA IPAD ==========
 // Sistema mejorado de arrastre táctil para iPad
@@ -285,6 +336,7 @@ document.addEventListener('touchmove', (e) => {
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
+    initCategorySelector();
     initMenu();
     initDragGame();
     initConnectGame();
@@ -303,6 +355,53 @@ document.addEventListener('DOMContentLoaded', () => {
     setupGlobalTouchListeners();
 });
 
+// Selector de Categoría
+function initCategorySelector() {
+    const categoryButtons = document.querySelectorAll('.category-button');
+    categoryButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const category = button.getAttribute('data-category');
+            state.currentCategory = category;
+            updateMainMenuForCategory();
+            showScreen('main-menu');
+        });
+        
+        // Soporte para teclado
+        button.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                button.click();
+            }
+        });
+    });
+}
+
+// Actualizar menú principal según categoría
+function updateMainMenuForCategory() {
+    const content = getCurrentContent();
+    const mainMenuTitle = document.getElementById('main-menu-title');
+    const referenceTitle = document.getElementById('reference-title');
+    const referenceStrip = document.getElementById('reference-strip');
+    
+    if (mainMenuTitle) {
+        mainMenuTitle.textContent = content.title.toUpperCase();
+    }
+    
+    if (referenceTitle) {
+        referenceTitle.textContent = content.title.toUpperCase();
+    }
+    
+    if (referenceStrip) {
+        referenceStrip.innerHTML = '';
+        content.items.forEach(item => {
+            const refItem = document.createElement('div');
+            refItem.className = 'ref-number';
+            refItem.textContent = content.display(item).toUpperCase();
+            referenceStrip.appendChild(refItem);
+        });
+    }
+}
+
 // Menú Principal
 function initMenu() {
     const gameButtons = document.querySelectorAll('.game-button');
@@ -320,6 +419,10 @@ function initMenu() {
             }
         });
     });
+    
+    // Actualizar menú al iniciar
+    updateMainMenuForCategory();
+    addBackToCategoryButton();
 }
 
 // Cambiar de pantalla
@@ -394,6 +497,18 @@ function startGame(gameType) {
             showScreen('game-cards');
             resetCardsGame();
             break;
+        case 'memory':
+            showScreen('game-memory');
+            resetMemoryGame();
+            break;
+        case 'pairing':
+            showScreen('game-pairing');
+            resetPairingGame();
+            break;
+        case 'classification':
+            showScreen('game-classification');
+            resetClassificationGame();
+            break;
     }
 }
 
@@ -404,6 +519,25 @@ document.querySelectorAll('.back-button').forEach(button => {
     });
 });
 
+// Botón para volver al selector de categorías desde el menú principal
+function addBackToCategoryButton() {
+    const mainMenu = document.getElementById('main-menu');
+    if (mainMenu && !mainMenu.querySelector('.back-to-category-button')) {
+        const backButton = document.createElement('button');
+        backButton.className = 'back-button back-to-category-button';
+        backButton.innerHTML = '<i class="fas fa-arrow-left"></i><span>CATEGORÍAS</span>';
+        backButton.setAttribute('aria-label', 'Volver a categorías');
+        backButton.style.marginBottom = '20px';
+        backButton.addEventListener('click', () => {
+            showScreen('category-selector');
+        });
+        const container = mainMenu.querySelector('.container');
+        if (container) {
+            container.insertBefore(backButton, container.firstChild);
+        }
+    }
+}
+
 // ========== JUEGO: ARRASTRAR ==========
 function initDragGame() {
     const container = document.querySelector('#game-drag .drag-game-container');
@@ -411,31 +545,43 @@ function initDragGame() {
 
     const dropZonesContainer = container.querySelector('.drop-zones');
     const dragItemsContainer = container.querySelector('.drag-items');
+    
+    // Limpiar contenedores
+    dropZonesContainer.innerHTML = '';
+    dragItemsContainer.innerHTML = '';
+
+    // Obtener contenido de la categoría actual
+    const content = getCurrentContent();
+    const items = content.items;
 
     // Crear zonas de destino
-    NUMBERS.forEach(num => {
+    items.forEach((item, index) => {
+        const itemValue = content.display(item);
         const dropZone = document.createElement('div');
         dropZone.className = 'drop-zone';
-        dropZone.setAttribute('data-number', num);
-        dropZone.setAttribute('aria-label', `Zona para el número ${num}`);
+        dropZone.setAttribute('data-item', itemValue);
+        dropZone.setAttribute('data-index', index);
+        dropZone.setAttribute('aria-label', `Zona para ${itemValue}`);
         
         const label = document.createElement('div');
         label.className = 'drop-zone-label';
-        label.textContent = num;
+        label.textContent = itemValue.toUpperCase();
         dropZone.appendChild(label);
         
         dropZonesContainer.appendChild(dropZone);
     });
 
-    // Crear números arrastrables (mezclados)
-    const shuffled = [...NUMBERS].sort(() => Math.random() - 0.5);
-    shuffled.forEach(num => {
+    // Crear elementos arrastrables (mezclados)
+    const shuffled = [...items].sort(() => Math.random() - 0.5);
+    shuffled.forEach((item, index) => {
+        const itemValue = content.display(item);
         const dragItem = document.createElement('div');
         dragItem.className = 'drag-item';
         dragItem.setAttribute('draggable', 'true');
-        dragItem.setAttribute('data-number', num);
-        dragItem.setAttribute('aria-label', `Número ${num}`);
-        dragItem.textContent = num;
+        dragItem.setAttribute('data-item', itemValue);
+        dragItem.setAttribute('data-index', index);
+        dragItem.setAttribute('aria-label', itemValue);
+        dragItem.textContent = itemValue.toUpperCase();
         
         dragItem.addEventListener('dragstart', handleDragStart);
         dragItem.addEventListener('dragend', handleDragEnd);
@@ -476,33 +622,36 @@ function initDragGame() {
                 
                 const dropZone = elementBelow?.closest('.drop-zone');
                 if (dropZone) {
-                    const draggedNumber = item.getAttribute('data-number');
-                    const targetNumber = dropZone.getAttribute('data-number');
+                    const draggedItem = item.getAttribute('data-item');
+                    const targetItem = dropZone.getAttribute('data-item');
                     
-                    if (draggedNumber === targetNumber) {
+                    if (draggedItem === targetItem) {
                         // Correcto
                         dropZone.classList.add('filled');
-                        dropZone.innerHTML = draggedNumber;
+                        dropZone.innerHTML = draggedItem.toUpperCase();
                         dropZone.style.fontSize = '4rem';
                         dropZone.style.fontWeight = 'bold';
                         dropZone.style.color = 'var(--accent-green)';
+                        dropZone.style.textTransform = 'uppercase';
                         
                         item.classList.add('placed');
                         item.setAttribute('draggable', 'false');
                         item.style.display = 'none';
                         
-                        state.dragState.placed.add(parseInt(draggedNumber));
+                        state.dragState.placed.add(draggedItem);
                         state.scores.drag = state.dragState.placed.size;
                         updateScore('drag', state.scores.drag);
                         
-                        showFeedback('drag-feedback', `¡Correcto! Número ${draggedNumber}`, 'success');
+                        const content = getCurrentContent();
+                        const totalItems = content.items.length;
+                        showFeedback('drag-feedback', `¡CORRECTO! ${draggedItem.toUpperCase()}`, 'success');
                         
-                        if (state.scores.drag === 9) {
+                        if (state.scores.drag === totalItems) {
                             setTimeout(() => showSuccessModal(), 1000);
                         }
                     } else {
                         // Incorrecto
-                        showFeedback('drag-feedback', 'Inténtalo de nuevo', 'error');
+                        showFeedback('drag-feedback', 'INTÉNTALO DE NUEVO', 'error');
                         dropZone.classList.add('shake');
                         setTimeout(() => dropZone.classList.remove('shake'), 500);
                     }
@@ -533,7 +682,7 @@ function handleDragStart(e) {
     
     item.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', item.getAttribute('data-number'));
+    e.dataTransfer.setData('text/plain', item.getAttribute('data-item'));
 }
 
 function handleDragEnd(e) {
@@ -564,39 +713,43 @@ function handleDrop(e) {
     e.preventDefault();
     const zone = e.target.closest('.drop-zone');
     if (!zone) return;
-
+    
     zone.classList.remove('drag-over');
     
-    const draggedNumber = e.dataTransfer.getData('text/plain');
-    const targetNumber = zone.getAttribute('data-number');
+    const draggedItem = e.dataTransfer.getData('text/plain');
+    const targetItem = zone.getAttribute('data-item');
     
-    const dragItem = document.querySelector(`.drag-item[data-number="${draggedNumber}"]:not(.placed)`);
+    const dragItem = document.querySelector(`.drag-item[data-item="${draggedItem}"]:not(.placed)`);
     
     if (!dragItem) return;
 
-    if (draggedNumber === targetNumber) {
+    if (draggedItem === targetItem) {
         // Correcto
         zone.classList.add('filled');
-        zone.innerHTML = draggedNumber;
+        zone.innerHTML = draggedItem.toUpperCase();
         zone.style.fontSize = '4rem';
         zone.style.fontWeight = 'bold';
         zone.style.color = 'var(--accent-green)';
+        zone.style.textTransform = 'uppercase';
         
         dragItem.classList.add('placed');
         dragItem.setAttribute('draggable', 'false');
+        dragItem.style.display = 'none';
         
-        state.dragState.placed.add(parseInt(draggedNumber));
+        state.dragState.placed.add(draggedItem);
         state.scores.drag = state.dragState.placed.size;
         updateScore('drag', state.scores.drag);
         
-        showFeedback('drag-feedback', `¡Correcto! Número ${draggedNumber}`, 'success');
+        const content = getCurrentContent();
+        const totalItems = content.items.length;
+        showFeedback('drag-feedback', `¡CORRECTO! ${draggedItem.toUpperCase()}`, 'success');
         
-        if (state.scores.drag === 9) {
+        if (state.scores.drag === totalItems) {
             setTimeout(() => showSuccessModal(), 1000);
         }
     } else {
         // Incorrecto
-        showFeedback('drag-feedback', 'Inténtalo de nuevo', 'error');
+        showFeedback('drag-feedback', 'INTÉNTALO DE NUEVO', 'error');
         zone.classList.add('shake');
         setTimeout(() => zone.classList.remove('shake'), 500);
     }
@@ -607,32 +760,8 @@ function resetDragGame() {
     state.dragState.placed.clear();
     updateScore('drag', 0);
     
-    const container = document.querySelector('#game-drag .drag-game-container');
-    if (!container) return;
-    
-    const dropZones = container.querySelectorAll('.drop-zone');
-    const dragItems = container.querySelectorAll('.drag-item');
-    
-    dropZones.forEach(zone => {
-        zone.classList.remove('filled', 'drag-over');
-        const num = zone.getAttribute('data-number');
-        zone.innerHTML = `<div class="drop-zone-label">${num}</div>`;
-        zone.style.fontSize = '';
-        zone.style.fontWeight = '';
-        zone.style.color = '';
-    });
-    
-    dragItems.forEach(item => {
-        item.classList.remove('placed', 'dragging');
-        item.setAttribute('draggable', 'true');
-    });
-    
-    // Mezclar de nuevo
-    const itemsArray = Array.from(dragItems);
-    itemsArray.sort(() => Math.random() - 0.5);
-    const dragContainer = container.querySelector('.drag-items');
-    itemsArray.forEach(item => dragContainer.appendChild(item));
-    
+    // Regenerar el juego con la categoría actual
+    initDragGame();
     clearFeedback('drag-feedback');
 }
 
@@ -644,62 +773,73 @@ function initConnectGame() {
     const leftContainer = container.querySelector('.connect-left');
     const rightContainer = container.querySelector('.connect-right');
     const svg = container.querySelector('#connect-svg');
+    
+    // Limpiar contenedores
+    leftContainer.innerHTML = '';
+    rightContainer.innerHTML = '';
+    svg.innerHTML = '';
 
-    // Crear números a la izquierda (ordenados)
-    NUMBERS.forEach(num => {
-        const item = document.createElement('div');
-        item.className = 'connect-item';
-        item.setAttribute('data-number', num);
-        item.setAttribute('data-side', 'left');
-        item.setAttribute('aria-label', `Número ${num}`);
-        item.setAttribute('tabindex', '0');
+    // Obtener contenido de la categoría actual
+    const content = getCurrentContent();
+    const items = content.items;
+
+    // Crear elementos a la izquierda (ordenados)
+    items.forEach(item => {
+        const itemValue = content.display(item);
+        const itemElement = document.createElement('div');
+        itemElement.className = 'connect-item';
+        itemElement.setAttribute('data-item', itemValue);
+        itemElement.setAttribute('data-side', 'left');
+        itemElement.setAttribute('aria-label', itemValue);
+        itemElement.setAttribute('tabindex', '0');
         
-        const content = document.createElement('div');
-        content.className = 'connect-item-number';
-        content.textContent = num;
-        item.appendChild(content);
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'connect-item-number';
+        contentDiv.textContent = itemValue.toUpperCase();
+        itemElement.appendChild(contentDiv);
         
-        item.addEventListener('click', () => handleConnectClick(item));
-        item.addEventListener('keydown', (e) => {
+        itemElement.addEventListener('click', () => handleConnectClick(itemElement));
+        itemElement.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                handleConnectClick(item);
+                handleConnectClick(itemElement);
             }
         });
         
         // Soporte táctil para dibujar líneas
-        addTouchSupportForConnect(item, leftContainer, rightContainer);
+        addTouchSupportForConnect(itemElement, leftContainer, rightContainer);
         
-        leftContainer.appendChild(item);
+        leftContainer.appendChild(itemElement);
     });
 
-    // Crear números a la derecha (mezclados)
-    const shuffledNumbers = [...NUMBERS].sort(() => Math.random() - 0.5);
-    shuffledNumbers.forEach(num => {
-        const item = document.createElement('div');
-        item.className = 'connect-item';
-        item.setAttribute('data-number', num);
-        item.setAttribute('data-side', 'right');
-        item.setAttribute('aria-label', `Número ${num}`);
-        item.setAttribute('tabindex', '0');
+    // Crear elementos a la derecha (mezclados)
+    const shuffledItems = [...items].sort(() => Math.random() - 0.5);
+    shuffledItems.forEach(item => {
+        const itemValue = content.display(item);
+        const itemElement = document.createElement('div');
+        itemElement.className = 'connect-item';
+        itemElement.setAttribute('data-item', itemValue);
+        itemElement.setAttribute('data-side', 'right');
+        itemElement.setAttribute('aria-label', itemValue);
+        itemElement.setAttribute('tabindex', '0');
         
-        const content = document.createElement('div');
-        content.className = 'connect-item-number';
-        content.textContent = num;
-        item.appendChild(content);
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'connect-item-number';
+        contentDiv.textContent = itemValue.toUpperCase();
+        itemElement.appendChild(contentDiv);
         
-        item.addEventListener('click', () => handleConnectClick(item));
-        item.addEventListener('keydown', (e) => {
+        itemElement.addEventListener('click', () => handleConnectClick(itemElement));
+        itemElement.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                handleConnectClick(item);
+                handleConnectClick(itemElement);
             }
         });
         
         // Soporte táctil para dibujar líneas
-        addTouchSupportForConnect(item, leftContainer, rightContainer);
+        addTouchSupportForConnect(itemElement, leftContainer, rightContainer);
         
-        rightContainer.appendChild(item);
+        rightContainer.appendChild(itemElement);
     });
 
     // Configurar SVG
@@ -711,11 +851,11 @@ function handleConnectClick(item) {
     if (item.classList.contains('connected')) return;
 
     const side = item.getAttribute('data-side');
-    const number = parseInt(item.getAttribute('data-number'));
+    const itemValue = item.getAttribute('data-item');
 
     if (state.connectState.selected === null) {
         // Primera selección - puede ser de cualquier lado
-        state.connectState.selected = { element: item, number, side };
+        state.connectState.selected = { element: item, itemValue, side };
         item.classList.add('selected');
     } else {
         // Segunda selección
@@ -723,21 +863,23 @@ function handleConnectClick(item) {
         
         // Solo permitir conectar si son de lados diferentes
         if (side !== selectedSide) {
-            // Verificar si es correcto (mismo número)
-            if (state.connectState.selected.number === number) {
+            // Verificar si es correcto (mismo elemento)
+            if (state.connectState.selected.itemValue === itemValue) {
                 // Correcto
                 drawConnection(state.connectState.selected.element, item, true);
                 state.connectState.selected.element.classList.add('connected');
                 item.classList.add('connected');
                 state.connectState.selected.element.classList.remove('selected');
                 
-                state.connectState.completed.add(number);
+                state.connectState.completed.add(itemValue);
                 state.scores.connect = state.connectState.completed.size;
                 updateScore('connect', state.scores.connect);
                 
-                showFeedback('connect-feedback', `¡Correcto! Número ${number}`, 'success');
+                const content = getCurrentContent();
+                const totalItems = content.items.length;
+                showFeedback('connect-feedback', `¡CORRECTO! ${itemValue.toUpperCase()}`, 'success');
                 
-                if (state.scores.connect === 9) {
+                if (state.scores.connect === totalItems) {
                     setTimeout(() => showSuccessModal(), 1000);
                 }
             } else {
@@ -749,7 +891,7 @@ function handleConnectClick(item) {
                     if (lastLine) lastLine.remove();
                 }, 1000);
                 
-                showFeedback('connect-feedback', 'Inténtalo de nuevo', 'error');
+                showFeedback('connect-feedback', 'INTÉNTALO DE NUEVO', 'error');
             }
             
             state.connectState.selected.element.classList.remove('selected');
@@ -757,7 +899,7 @@ function handleConnectClick(item) {
         } else {
             // Mismo lado - cambiar selección
             state.connectState.selected.element.classList.remove('selected');
-            state.connectState.selected = { element: item, number, side };
+            state.connectState.selected = { element: item, itemValue, side };
             item.classList.add('selected');
         }
     }
@@ -843,24 +985,26 @@ function setupGlobalTouchListeners() {
         if (endElement && endElement !== startElement && !endElement.classList.contains('connected')) {
             const startSide = startElement.getAttribute('data-side');
             const endSide = endElement.getAttribute('data-side');
-            const startNumber = parseInt(startElement.getAttribute('data-number'));
-            const endNumber = parseInt(endElement.getAttribute('data-number'));
+            const startItem = startElement.getAttribute('data-item');
+            const endItem = endElement.getAttribute('data-item');
             
             // Solo permitir conectar si son de lados diferentes
             if (startSide !== endSide) {
-                if (startNumber === endNumber) {
+                if (startItem === endItem) {
                     // Correcto
                     drawConnection(startElement, endElement, true);
                     startElement.classList.add('connected');
                     endElement.classList.add('connected');
                     
-                    state.connectState.completed.add(startNumber);
+                    state.connectState.completed.add(startItem);
                     state.scores.connect = state.connectState.completed.size;
                     updateScore('connect', state.scores.connect);
                     
-                    showFeedback('connect-feedback', `¡Correcto! Número ${startNumber}`, 'success');
+                    const content = getCurrentContent();
+                    const totalItems = content.items.length;
+                    showFeedback('connect-feedback', `¡CORRECTO! ${startItem.toUpperCase()}`, 'success');
                     
-                    if (state.scores.connect === 9) {
+                    if (state.scores.connect === totalItems) {
                         setTimeout(() => showSuccessModal(), 1000);
                     }
                 } else {
@@ -872,7 +1016,7 @@ function setupGlobalTouchListeners() {
                         if (lastLine) lastLine.remove();
                     }, 1000);
                     
-                    showFeedback('connect-feedback', 'Inténtalo de nuevo', 'error');
+                    showFeedback('connect-feedback', 'INTÉNTALO DE NUEVO', 'error');
                 }
             }
         }
@@ -919,26 +1063,8 @@ function resetConnectGame() {
     }
     updateScore('connect', 0);
     
-    const container = document.querySelector('#game-connect .connect-game-container');
-    if (!container) return;
-    
-    const items = container.querySelectorAll('.connect-item');
-    items.forEach(item => {
-        item.classList.remove('selected', 'connected');
-    });
-    
-    const svg = container.querySelector('#connect-svg');
-    svg.innerHTML = '';
-    
-    // Limpiar contenedores
-    const leftContainer = container.querySelector('.connect-left');
-    const rightContainer = container.querySelector('.connect-right');
-    leftContainer.innerHTML = '';
-    rightContainer.innerHTML = '';
-    
-    // Recrear el juego
+    // Regenerar el juego con la categoría actual
     initConnectGame();
-    
     clearFeedback('connect-feedback');
 }
 
@@ -946,13 +1072,20 @@ function resetConnectGame() {
 function initMatchGame() {
     const container = document.querySelector('#game-match .match-game-container');
     if (!container) return;
+    
+    // Limpiar contenedor
+    container.innerHTML = '';
+
+    // Obtener contenido de la categoría actual
+    const content = getCurrentContent();
+    const items = content.items;
 
     // Crear pares de tarjetas
     const cards = [];
-    NUMBERS.forEach(num => {
-        // Dos tarjetas por número
+    items.forEach(item => {
+        // Dos tarjetas por elemento
         for (let i = 0; i < 2; i++) {
-            cards.push(num);
+            cards.push(item);
         }
     });
 
@@ -960,18 +1093,19 @@ function initMatchGame() {
     cards.sort(() => Math.random() - 0.5);
 
     // Crear tarjetas
-    cards.forEach((num, index) => {
+    cards.forEach((item, index) => {
+        const itemValue = content.display(item);
         const card = document.createElement('div');
         card.className = 'match-card';
-        card.setAttribute('data-number', num);
+        card.setAttribute('data-item', itemValue);
         card.setAttribute('data-index', index);
         card.setAttribute('aria-label', `Tarjeta ${index + 1}`);
         card.setAttribute('tabindex', '0');
         
-        const content = document.createElement('div');
-        content.className = 'match-card-content';
-        content.textContent = num;
-        card.appendChild(content);
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'match-card-content';
+        contentDiv.textContent = itemValue.toUpperCase();
+        card.appendChild(contentDiv);
         
         card.addEventListener('click', () => handleMatchClick(card));
         card.addEventListener('keydown', (e) => {
@@ -996,28 +1130,30 @@ function handleMatchClick(card) {
         state.matchState.canFlip = false;
         
         const [card1, card2] = state.matchState.flipped;
-        const num1 = parseInt(card1.getAttribute('data-number'));
-        const num2 = parseInt(card2.getAttribute('data-number'));
+        const item1 = card1.getAttribute('data-item');
+        const item2 = card2.getAttribute('data-item');
 
         setTimeout(() => {
-            if (num1 === num2) {
+            if (item1 === item2) {
                 // Pareja encontrada
                 card1.classList.add('matched');
                 card2.classList.add('matched');
-                state.matchState.matched.add(num1);
+                state.matchState.matched.add(item1);
                 state.scores.match = state.matchState.matched.size;
                 updateScore('match', state.scores.match);
                 
-                showFeedback('match-feedback', `¡Pareja encontrada! Número ${num1}`, 'success');
+                const content = getCurrentContent();
+                const totalItems = content.items.length;
+                showFeedback('match-feedback', `¡PAREJA ENCONTRADA! ${item1.toUpperCase()}`, 'success');
                 
-                if (state.scores.match === 9) {
+                if (state.scores.match === totalItems) {
                     setTimeout(() => showSuccessModal(), 1000);
                 }
             } else {
                 // No es pareja
                 card1.classList.remove('flipped');
                 card2.classList.remove('flipped');
-                showFeedback('match-feedback', 'Inténtalo de nuevo', 'error');
+                showFeedback('match-feedback', 'INTÉNTALO DE NUEVO', 'error');
             }
             
             state.matchState.flipped = [];
@@ -1033,18 +1169,8 @@ function resetMatchGame() {
     state.matchState.canFlip = true;
     updateScore('match', 0);
     
-    const container = document.querySelector('#game-match .match-game-container');
-    if (!container) return;
-    
-    const cards = Array.from(container.children);
-    cards.forEach(card => {
-        card.classList.remove('flipped', 'matched');
-    });
-    
-    // Mezclar de nuevo
-    cards.sort(() => Math.random() - 0.5);
-    cards.forEach(card => container.appendChild(card));
-    
+    // Regenerar el juego con la categoría actual
+    initMatchGame();
     clearFeedback('match-feedback');
 }
 
@@ -1053,6 +1179,19 @@ function updateScore(gameType, score) {
     const scoreElement = document.getElementById(`${gameType}-score`);
     if (scoreElement) {
         scoreElement.textContent = score;
+        
+        // Actualizar el máximo según la categoría actual
+        const content = getCurrentContent();
+        const totalItems = content.items.length;
+        const parent = scoreElement.parentElement;
+        if (parent && parent.textContent.includes('/')) {
+            // Buscar el elemento que contiene el "/" y actualizarlo
+            const parentText = parent.textContent;
+            const parts = parentText.split('/');
+            if (parts.length === 2) {
+                parent.innerHTML = `<span id="${gameType}-score">${score}</span> / ${totalItems}`;
+            }
+        }
     }
 }
 
@@ -1131,6 +1270,15 @@ document.getElementById('play-again')?.addEventListener('click', () => {
                 break;
             case 'cards':
                 resetCardsGame();
+                break;
+            case 'memory':
+                resetMemoryGame();
+                break;
+            case 'pairing':
+                resetPairingGame();
+                break;
+            case 'classification':
+                resetClassificationGame();
                 break;
         }
     }
@@ -2928,6 +3076,482 @@ function resetCardsGame() {
     
     initCardsGame();
     clearFeedback('cards-feedback');
+}
+
+// ========== JUEGO: OBSERVAR Y MEMORIZAR ==========
+function initMemoryGame() {
+    const displayPhase = document.querySelector('#memory-display-phase');
+    const selectPhase = document.querySelector('#memory-select-phase');
+    const itemsDisplay = document.querySelector('#memory-items-display');
+    const selectItems = document.querySelector('#memory-select-items');
+    const instruction = document.querySelector('#memory-instruction');
+    
+    if (!displayPhase || !selectPhase || !itemsDisplay || !selectItems) return;
+    
+    // Mostrar fase de observación
+    displayPhase.style.display = 'block';
+    selectPhase.style.display = 'none';
+    instruction.textContent = 'Observa atentamente y recuerda los elementos. Al final, toca los que has visto.';
+    
+    // Crear elementos para mostrar (números del 1 al 9, algunos se mostrarán)
+    const allNumbers = [...NUMBERS];
+    const countToShow = Math.min(5, allNumbers.length);
+    const shuffled = [...allNumbers].sort(() => Math.random() - 0.5);
+    const shownNumbers = shuffled.slice(0, countToShow);
+    
+    state.memoryState.shownItems = shownNumbers;
+    state.memoryState.items = [...allNumbers];
+    state.memoryState.selectedItems.clear();
+    state.memoryState.phase = 'display';
+    state.memoryState.timeLeft = 5;
+    
+    // Mostrar elementos
+    itemsDisplay.innerHTML = '';
+    shownNumbers.forEach(num => {
+        const item = document.createElement('div');
+        item.className = 'memory-display-item';
+        item.textContent = num;
+        item.style.animation = 'fadeIn 0.5s ease-out';
+        itemsDisplay.appendChild(item);
+    });
+    
+    // Actualizar total
+    document.querySelector('#memory-total').textContent = shownNumbers.length;
+    state.scores.memory = 0;
+    updateScore('memory', 0);
+    
+    // Iniciar temporizador
+    const timerEl = document.querySelector('#memory-time');
+    state.memoryState.timer = setInterval(() => {
+        state.memoryState.timeLeft--;
+        if (timerEl) timerEl.textContent = state.memoryState.timeLeft;
+        
+        if (state.memoryState.timeLeft <= 0) {
+            clearInterval(state.memoryState.timer);
+            showMemorySelectPhase();
+        }
+    }, 1000);
+}
+
+function showMemorySelectPhase() {
+    const displayPhase = document.querySelector('#memory-display-phase');
+    const selectPhase = document.querySelector('#memory-select-phase');
+    const selectItems = document.querySelector('#memory-select-items');
+    const instruction = document.querySelector('#memory-instruction');
+    
+    if (!displayPhase || !selectPhase || !selectItems) return;
+    
+    displayPhase.style.display = 'none';
+    selectPhase.style.display = 'block';
+    instruction.textContent = 'Toca los elementos que viste:';
+    
+    state.memoryState.phase = 'select';
+    
+    // Crear elementos para seleccionar (mezclados, incluyendo algunos que no se mostraron)
+    const allNumbers = [...NUMBERS];
+    const shuffled = [...allNumbers].sort(() => Math.random() - 0.5);
+    
+    selectItems.innerHTML = '';
+    shuffled.forEach(num => {
+        const item = document.createElement('button');
+        item.className = 'memory-select-item';
+        item.textContent = num;
+        item.setAttribute('data-number', num);
+        item.setAttribute('aria-label', `Número ${num}`);
+        
+        item.addEventListener('click', () => handleMemorySelect(num, item));
+        item.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleMemorySelect(num, item);
+        }, { passive: false });
+        
+        selectItems.appendChild(item);
+    });
+}
+
+function handleMemorySelect(number, button) {
+    if (state.memoryState.selectedItems.has(number)) {
+        // Deseleccionar
+        state.memoryState.selectedItems.delete(number);
+        button.classList.remove('selected');
+    } else {
+        // Seleccionar
+        state.memoryState.selectedItems.add(number);
+        button.classList.add('selected');
+    }
+    
+    // Verificar si ha terminado
+    const shownItems = state.memoryState.shownItems;
+    const selected = Array.from(state.memoryState.selectedItems);
+    
+    // Verificar si todos los elementos mostrados están seleccionados
+    const allShownSelected = shownItems.every(item => selected.includes(item));
+    const noExtraSelected = selected.every(item => shownItems.includes(item));
+    
+    if (allShownSelected && noExtraSelected && selected.length === shownItems.length) {
+        state.scores.memory = shownItems.length;
+        updateScore('memory', state.scores.memory);
+        showFeedback('memory-feedback', '¡Perfecto! Recordaste todos los elementos', 'success');
+        setTimeout(() => showSuccessModal(), 1500);
+    } else if (selected.length === shownItems.length) {
+        // Ha seleccionado el número correcto pero algunos son incorrectos
+        const correct = selected.filter(item => shownItems.includes(item)).length;
+        showFeedback('memory-feedback', `Has seleccionado ${correct} de ${shownItems.length} correctos`, 'error');
+    }
+}
+
+function resetMemoryGame() {
+    if (state.memoryState.timer) {
+        clearInterval(state.memoryState.timer);
+    }
+    state.memoryState.items = [];
+    state.memoryState.shownItems = [];
+    state.memoryState.selectedItems.clear();
+    state.memoryState.phase = 'display';
+    state.memoryState.timeLeft = 5;
+    state.scores.memory = 0;
+    updateScore('memory', 0);
+    
+    initMemoryGame();
+    clearFeedback('memory-feedback');
+}
+
+// ========== JUEGO: EMPAREJAMIENTO ==========
+function initPairingGame() {
+    const cardsContainer = document.querySelector('#pairing-cards');
+    const noBtn = document.querySelector('#pairing-no');
+    const yesBtn = document.querySelector('#pairing-yes');
+    
+    if (!cardsContainer || !noBtn || !yesBtn) return;
+    
+    // Crear pares de números (algunos van juntos, otros no)
+    const pairs = [];
+    const usedNumbers = new Set();
+    
+    // Crear algunos pares que van juntos (números consecutivos)
+    for (let i = 1; i <= 4; i++) {
+        if (i + 1 <= 9 && !usedNumbers.has(i) && !usedNumbers.has(i + 1)) {
+            pairs.push({ num1: i, num2: i + 1, match: true });
+            usedNumbers.add(i);
+            usedNumbers.add(i + 1);
+        }
+    }
+    
+    // Crear algunos pares que NO van juntos
+    const remaining = NUMBERS.filter(n => !usedNumbers.has(n));
+    for (let i = 0; i < Math.min(5, remaining.length - 1); i += 2) {
+        if (i + 1 < remaining.length) {
+            pairs.push({ num1: remaining[i], num2: remaining[i + 1], match: false });
+        }
+    }
+    
+    // Mezclar pares
+    pairs.sort(() => Math.random() - 0.5);
+    
+    state.pairingState.pairs = pairs;
+    state.pairingState.completed.clear();
+    state.scores.pairing = 0;
+    updateScore('pairing', 0);
+    
+    // Configurar botones
+    noBtn.onclick = () => handlePairingAnswer(false);
+    noBtn.ontouchstart = (e) => {
+        e.preventDefault();
+        handlePairingAnswer(false);
+    };
+    
+    yesBtn.onclick = () => handlePairingAnswer(true);
+    yesBtn.ontouchstart = (e) => {
+        e.preventDefault();
+        handlePairingAnswer(true);
+    };
+    
+    showNextPairing();
+}
+
+function showNextPairing() {
+    const cardsContainer = document.querySelector('#pairing-cards');
+    if (!cardsContainer) return;
+    
+    const remainingPairs = state.pairingState.pairs.filter((pair, index) => 
+        !state.pairingState.completed.has(index)
+    );
+    
+    if (remainingPairs.length === 0) {
+        showFeedback('pairing-feedback', '¡Completaste todos los pares!', 'success');
+        setTimeout(() => showSuccessModal(), 1500);
+        return;
+    }
+    
+    const currentPair = remainingPairs[0];
+    const pairIndex = state.pairingState.pairs.indexOf(currentPair);
+    state.pairingState.currentPair = { ...currentPair, index: pairIndex };
+    
+    cardsContainer.innerHTML = '';
+    
+    // Crear primera carta
+    const card1 = document.createElement('div');
+    card1.className = 'pairing-card';
+    card1.textContent = currentPair.num1;
+    card1.style.animation = 'fadeIn 0.5s ease-out';
+    cardsContainer.appendChild(card1);
+    
+    // Crear segunda carta
+    const card2 = document.createElement('div');
+    card2.className = 'pairing-card';
+    card2.textContent = currentPair.num2;
+    card2.style.animation = 'fadeIn 0.5s ease-out 0.2s both';
+    cardsContainer.appendChild(card2);
+}
+
+function handlePairingAnswer(answer) {
+    const currentPair = state.pairingState.currentPair;
+    if (!currentPair) return;
+    
+    const isCorrect = currentPair.match === answer;
+    
+    if (isCorrect) {
+        state.pairingState.completed.add(currentPair.index);
+        state.scores.pairing = state.pairingState.completed.size;
+        updateScore('pairing', state.scores.pairing);
+        
+        showFeedback('pairing-feedback', '¡Correcto!', 'success');
+        
+        setTimeout(() => {
+            showNextPairing();
+        }, 1000);
+    } else {
+        showFeedback('pairing-feedback', 'Inténtalo de nuevo', 'error');
+    }
+}
+
+function resetPairingGame() {
+    state.pairingState.currentPair = null;
+    state.pairingState.completed.clear();
+    state.pairingState.pairs = [];
+    state.scores.pairing = 0;
+    updateScore('pairing', 0);
+    
+    initPairingGame();
+    clearFeedback('pairing-feedback');
+}
+
+// ========== JUEGO: CLASIFICACIÓN RÁPIDA ==========
+function initClassificationGame() {
+    const itemsContainer = document.querySelector('#classification-items');
+    const boxesContainer = document.querySelector('#classification-boxes');
+    
+    if (!itemsContainer || !boxesContainer) return;
+    
+    // Crear 3 cajas de clasificación (por ejemplo: pequeños, medianos, grandes)
+    const boxes = [
+        { name: 'Pequeños', numbers: [1, 2, 3], color: 'blue' },
+        { name: 'Medianos', numbers: [4, 5, 6], color: 'green' },
+        { name: 'Grandes', numbers: [7, 8, 9], color: 'orange' }
+    ];
+    
+    state.classificationState.boxes = boxes;
+    state.classificationState.placed.clear();
+    state.scores.classification = 0;
+    updateScore('classification', 0);
+    
+    // Crear cajas
+    boxesContainer.innerHTML = '';
+    boxes.forEach((box, index) => {
+        const boxEl = document.createElement('div');
+        boxEl.className = 'classification-box';
+        boxEl.setAttribute('data-box-index', index);
+        boxEl.style.borderColor = `var(--accent-${box.color})`;
+        boxEl.style.background = `linear-gradient(135deg, var(--accent-${box.color}), rgba(0, 0, 0, 0.3))`;
+        
+        const title = document.createElement('h3');
+        title.textContent = box.name;
+        title.style.color = `var(--accent-${box.color})`;
+        boxEl.appendChild(title);
+        
+        const numbersList = document.createElement('div');
+        numbersList.className = 'classification-numbers-list';
+        boxEl.appendChild(numbersList);
+        
+        boxEl.addEventListener('dragover', handleClassificationDragOver);
+        boxEl.addEventListener('drop', handleClassificationDrop);
+        boxEl.addEventListener('dragenter', handleClassificationDragEnter);
+        boxEl.addEventListener('dragleave', handleClassificationDragLeave);
+        
+        boxesContainer.appendChild(boxEl);
+    });
+    
+    // Crear elementos para arrastrar (mezclados)
+    const shuffled = [...NUMBERS].sort(() => Math.random() - 0.5);
+    itemsContainer.innerHTML = '';
+    
+    shuffled.forEach(num => {
+        const item = document.createElement('div');
+        item.className = 'classification-item';
+        item.setAttribute('draggable', 'true');
+        item.setAttribute('data-number', num);
+        item.setAttribute('aria-label', `Número ${num}`);
+        item.textContent = num;
+        
+        item.addEventListener('dragstart', handleClassificationDragStart);
+        item.addEventListener('dragend', handleClassificationDragEnd);
+        
+        // Soporte táctil
+        addTouchSupport(
+            item,
+            (e, touch) => {
+                const it = e.target.closest('.classification-item');
+                if (it && it.classList.contains('placed')) {
+                    e.preventDefault();
+                    return;
+                }
+            },
+            (e, touch, deltaX, deltaY) => {
+                const it = activeTouchDrag.element;
+                if (it) {
+                    const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
+                    const box = elementBelow?.closest('.classification-box');
+                    document.querySelectorAll('.classification-box').forEach(b => {
+                        b.classList.remove('drag-over');
+                    });
+                    if (box) {
+                        box.classList.add('drag-over');
+                    }
+                }
+            },
+            (e, touch) => {
+                // Ya se resetea en resetTouchDrag
+            },
+            (e, touch, elementBelow) => {
+                const it = activeTouchDrag.element;
+                if (!it || it.classList.contains('placed')) return;
+                
+                const box = elementBelow?.closest('.classification-box');
+                if (box) {
+                    const draggedNumber = parseInt(it.getAttribute('data-number'));
+                    const boxIndex = parseInt(box.getAttribute('data-box-index'));
+                    const targetBox = state.classificationState.boxes[boxIndex];
+                    
+                    if (targetBox.numbers.includes(draggedNumber)) {
+                        const numbersList = box.querySelector('.classification-numbers-list');
+                        const numberDisplay = document.createElement('div');
+                        numberDisplay.className = 'classification-number-display';
+                        numberDisplay.textContent = draggedNumber;
+                        numbersList.appendChild(numberDisplay);
+                        
+                        it.classList.add('placed');
+                        it.setAttribute('draggable', 'false');
+                        it.style.display = 'none';
+                        
+                        state.classificationState.placed.set(draggedNumber, boxIndex);
+                        state.scores.classification = state.classificationState.placed.size;
+                        updateScore('classification', state.scores.classification);
+                        
+                        showFeedback('classification-feedback', `¡Correcto! ${draggedNumber} va en ${targetBox.name}`, 'success');
+                        
+                        if (state.scores.classification === 9) {
+                            setTimeout(() => showSuccessModal(), 1500);
+                        }
+                    } else {
+                        showFeedback('classification-feedback', 'Inténtalo de nuevo', 'error');
+                        box.classList.add('shake');
+                        setTimeout(() => box.classList.remove('shake'), 500);
+                    }
+                    
+                    box.classList.remove('drag-over');
+                }
+            }
+        );
+        
+        itemsContainer.appendChild(item);
+    });
+}
+
+function handleClassificationDragStart(e) {
+    const item = e.target.closest('.classification-item');
+    if (!item || item.classList.contains('placed')) {
+        e.preventDefault();
+        return;
+    }
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.getAttribute('data-number'));
+}
+
+function handleClassificationDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+function handleClassificationDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleClassificationDragEnter(e) {
+    e.preventDefault();
+    const box = e.target.closest('.classification-box');
+    if (box) {
+        box.classList.add('drag-over');
+    }
+}
+
+function handleClassificationDragLeave(e) {
+    const box = e.target.closest('.classification-box');
+    if (box) {
+        box.classList.remove('drag-over');
+    }
+}
+
+function handleClassificationDrop(e) {
+    e.preventDefault();
+    const box = e.target.closest('.classification-box');
+    if (!box) return;
+    
+    box.classList.remove('drag-over');
+    
+    const draggedNumber = parseInt(e.dataTransfer.getData('text/plain'));
+    const boxIndex = parseInt(box.getAttribute('data-box-index'));
+    const targetBox = state.classificationState.boxes[boxIndex];
+    
+    const item = document.querySelector(`.classification-item[data-number="${draggedNumber}"]:not(.placed)`);
+    if (!item) return;
+    
+    if (targetBox.numbers.includes(draggedNumber)) {
+        const numbersList = box.querySelector('.classification-numbers-list');
+        const numberDisplay = document.createElement('div');
+        numberDisplay.className = 'classification-number-display';
+        numberDisplay.textContent = draggedNumber;
+        numbersList.appendChild(numberDisplay);
+        
+        item.classList.add('placed');
+        item.setAttribute('draggable', 'false');
+        item.style.display = 'none';
+        
+        state.classificationState.placed.set(draggedNumber, boxIndex);
+        state.scores.classification = state.classificationState.placed.size;
+        updateScore('classification', state.scores.classification);
+        
+        showFeedback('classification-feedback', `¡Correcto! ${draggedNumber} va en ${targetBox.name}`, 'success');
+        
+        if (state.scores.classification === 9) {
+            setTimeout(() => showSuccessModal(), 1500);
+        }
+    } else {
+        showFeedback('classification-feedback', 'Inténtalo de nuevo', 'error');
+        box.classList.add('shake');
+        setTimeout(() => box.classList.remove('shake'), 500);
+    }
+}
+
+function resetClassificationGame() {
+    state.classificationState.items = [];
+    state.classificationState.boxes = [];
+    state.classificationState.placed.clear();
+    state.scores.classification = 0;
+    updateScore('classification', 0);
+    
+    initClassificationGame();
+    clearFeedback('classification-feedback');
 }
 
 // Prevenir comportamiento por defecto en drag

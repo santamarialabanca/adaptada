@@ -8,15 +8,73 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <!-- Menú Principal -->
-    <div id="main-menu" class="screen active">
+    <!-- Selector de Categoría -->
+    <div id="category-selector" class="screen active">
         <div class="container">
             <header class="header">
-                <h1 class="title">
-                    Aprende los Números
-                </h1>
-                <p class="subtitle">Elige un juego para comenzar</p>
+                <h1 class="title">APRENDE</h1>
+                <p class="subtitle">ELIGE QUÉ QUIERES APRENDER</p>
             </header>
+
+            <div class="category-grid">
+                <button class="category-button" data-category="numbers" aria-label="Números">
+                    <div class="category-icon">
+                        <i class="fas fa-hashtag"></i>
+                    </div>
+                    <div class="category-content">
+                        <h2>NÚMEROS</h2>
+                        <p>DEL 1 AL 9</p>
+                    </div>
+                </button>
+
+                <button class="category-button" data-category="letters" aria-label="Letras">
+                    <div class="category-icon">
+                        <i class="fas fa-font"></i>
+                    </div>
+                    <div class="category-content">
+                        <h2>LETRAS</h2>
+                        <p>VOCALES Y CONSONANTES</p>
+                    </div>
+                </button>
+
+                <button class="category-button" data-category="animals" aria-label="Animales">
+                    <div class="category-icon">
+                        <i class="fas fa-paw"></i>
+                    </div>
+                    <div class="category-content">
+                        <h2>ANIMALES</h2>
+                        <p>CONOCE LOS ANIMALES</p>
+                    </div>
+                </button>
+
+                <button class="category-button" data-category="colors" aria-label="Colores">
+                    <div class="category-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="category-content">
+                        <h2>COLORES</h2>
+                        <p>APRENDE LOS COLORES</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menú Principal -->
+    <div id="main-menu" class="screen">
+        <div class="container">
+            <header class="header">
+                <h1 class="title" id="main-menu-title">APRENDE LOS NÚMEROS</h1>
+                <p class="subtitle">ELIGE UN JUEGO PARA COMENZAR</p>
+            </header>
+
+            <!-- Referencia visual -->
+            <div class="number-reference" id="content-reference">
+                <h3 id="reference-title">LOS NÚMEROS DEL 1 AL 9</h3>
+                <div class="number-strip" id="reference-strip">
+                    <!-- Se generará dinámicamente según la categoría -->
+                </div>
+            </div>
 
             <div class="menu-grid">
                 <button class="game-button" data-game="drag" aria-label="Juego de arrastrar números">
@@ -158,22 +216,36 @@
                         <p>Toca para ver números aleatorios</p>
                     </div>
                 </button>
-            </div>
 
-            <!-- Referencia visual de números -->
-            <div class="number-reference">
-                <h3>Los números del 1 al 9</h3>
-                <div class="number-strip">
-                    <div class="ref-number" data-num="1">1</div>
-                    <div class="ref-number" data-num="2">2</div>
-                    <div class="ref-number" data-num="3">3</div>
-                    <div class="ref-number" data-num="4">4</div>
-                    <div class="ref-number" data-num="5">5</div>
-                    <div class="ref-number" data-num="6">6</div>
-                    <div class="ref-number" data-num="7">7</div>
-                    <div class="ref-number" data-num="8">8</div>
-                    <div class="ref-number" data-num="9">9</div>
-                </div>
+                <button class="game-button" data-game="memory" aria-label="Observar y memorizar">
+                    <div class="button-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Observar y Memorizar</h2>
+                        <p>Observa y recuerda los elementos</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="pairing" aria-label="Emparejamiento">
+                    <div class="button-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Emparejamiento</h2>
+                        <p>Decide si las cartas van juntas</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="classification" aria-label="Clasificación rápida">
+                    <div class="button-icon">
+                        <i class="fas fa-sort"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Clasificación Rápida</h2>
+                        <p>Arrastra elementos a las cajas correctas</p>
+                    </div>
+                </button>
             </div>
         </div>
     </div>
@@ -658,6 +730,112 @@
         </div>
 
         <div class="feedback-message" id="cards-feedback"></div>
+    </div>
+
+    <!-- Juego: Observar y Memorizar -->
+    <div id="game-memory" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Observar y Memorizar</h2>
+            <div class="score-display">
+                <span id="memory-score">0</span> / <span id="memory-total">0</span>
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p id="memory-instruction">Observa atentamente y recuerda los elementos. Al final, toca los que has visto.</p>
+        </div>
+
+        <div class="memory-game-container">
+            <div class="memory-display-phase" id="memory-display-phase">
+                <div class="memory-items-display" id="memory-items-display">
+                    <!-- Los elementos se mostrarán aquí -->
+                </div>
+                <div class="memory-timer" id="memory-timer">
+                    <i class="fas fa-clock"></i>
+                    <span id="memory-time">5</span>
+                </div>
+            </div>
+            <div class="memory-select-phase" id="memory-select-phase" style="display: none;">
+                <h3>Toca los elementos que viste:</h3>
+                <div class="memory-select-items" id="memory-select-items">
+                    <!-- Los elementos para seleccionar se mostrarán aquí -->
+                </div>
+            </div>
+        </div>
+
+        <div class="feedback-message" id="memory-feedback"></div>
+    </div>
+
+    <!-- Juego: Emparejamiento -->
+    <div id="game-pairing" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Emparejamiento</h2>
+            <div class="score-display">
+                <span id="pairing-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Decide si las dos cartas van juntas o no</p>
+        </div>
+
+        <div class="pairing-game-container">
+            <div class="pairing-cards" id="pairing-cards">
+                <!-- Las dos cartas se mostrarán aquí -->
+            </div>
+            <div class="pairing-actions">
+                <button class="pairing-btn pairing-no" id="pairing-no" aria-label="No van juntas">
+                    <i class="fas fa-times"></i>
+                    <span>No</span>
+                </button>
+                <button class="pairing-btn pairing-yes" id="pairing-yes" aria-label="Sí van juntas">
+                    <i class="fas fa-check"></i>
+                    <span>Sí</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="feedback-message" id="pairing-feedback"></div>
+    </div>
+
+    <!-- Juego: Clasificación Rápida -->
+    <div id="game-classification" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Clasificación Rápida</h2>
+            <div class="score-display">
+                <span id="classification-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Arrastra y suelta cada elemento en la caja correcta</p>
+        </div>
+
+        <div class="classification-game-container">
+            <div class="classification-items" id="classification-items">
+                <!-- Los elementos para arrastrar se mostrarán aquí -->
+            </div>
+            <div class="classification-boxes" id="classification-boxes">
+                <!-- Las cajas de destino se mostrarán aquí -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="classification-feedback"></div>
     </div>
 
     <!-- Mensaje de éxito -->

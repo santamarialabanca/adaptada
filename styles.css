@@ -102,6 +102,8 @@ body::before {
     justify-content: center;
     gap: 20px;
     flex-wrap: wrap;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 .title i {
@@ -111,6 +113,91 @@ body::before {
 .subtitle {
     font-size: clamp(1.2rem, 4vw, 1.8rem);
     color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+/* Selector de Categorías */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    margin-bottom: 50px;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.category-button {
+    background: var(--bg-card);
+    border: 4px solid var(--accent-yellow);
+    border-radius: 20px;
+    padding: 40px 30px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    color: var(--text-light);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 25px;
+}
+
+.category-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.category-button:hover::before,
+.category-button:active::before {
+    left: 100%;
+}
+
+.category-button:hover,
+.category-button:focus {
+    transform: translateY(-5px) scale(1.02);
+    border-color: var(--accent-orange);
+    box-shadow: var(--shadow-glow);
+    background: var(--bg-card-hover);
+}
+
+.category-button:active {
+    transform: translateY(-2px) scale(0.98);
+}
+
+.category-icon {
+    font-size: 5rem;
+    color: var(--accent-yellow);
+    margin-bottom: 10px;
+}
+
+.category-content h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: var(--accent-yellow);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: bold;
+}
+
+.category-content p {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
 }
 
 /* Menú de Juegos */
@@ -179,11 +266,16 @@ body::before {
     font-size: 1.8rem;
     margin-bottom: 10px;
     color: var(--accent-yellow);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
 }
 
 .button-content p {
     font-size: 1.1rem;
     color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* Referencia de Números */
@@ -191,9 +283,10 @@ body::before {
     background: var(--bg-card);
     border: 3px solid var(--accent-blue);
     border-radius: 20px;
-    padding: 30px;
-    margin-top: 40px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    padding: 25px;
+    margin: 30px auto;
+    max-width: 800px;
+    box-shadow: 0 8px 20px rgba(0, 191, 255, 0.3), 0 0 30px rgba(0, 191, 255, 0.2);
 }
 
 .number-reference h3 {
@@ -201,6 +294,9 @@ body::before {
     font-size: 1.8rem;
     color: var(--accent-blue);
     margin-bottom: 25px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
 }
 
 .number-strip {
@@ -212,20 +308,26 @@ body::before {
 }
 
 .ref-number {
-    width: 80px;
-    height: 80px;
+    min-width: 80px;
+    min-height: 80px;
+    padding: 10px 15px;
     background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
     border: 4px solid var(--text-light);
     border-radius: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: 2rem;
     font-weight: bold;
     color: var(--bg-dark);
     box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
     transition: var(--transition);
     cursor: default;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    word-break: break-word;
+    line-height: 1.2;
 }
 
 .ref-number:hover {
@@ -249,6 +351,9 @@ body::before {
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
     flex: 1;
     text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
 }
 
 .back-button {
@@ -298,6 +403,12 @@ body::before {
     align-items: center;
     gap: 15px;
     font-size: 1.2rem;
+}
+
+.game-instructions p {
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
 }
 
 .game-instructions i {
@@ -2076,6 +2187,329 @@ button, .drag-item, .connect-item, .match-card, .visual-card, .letter-item,
         min-width: 100px;
         min-height: 140px;
         font-size: 3rem;
+    }
+}
+
+/* ========== ESTILOS PARA JUEGOS ADICIONALES (OBSERVAR, EMPAREJAMIENTO, CLASIFICACIÓN) ========== */
+
+/* Observar y Memorizar */
+.memory-game-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.memory-display-phase {
+    text-align: center;
+}
+
+.memory-items-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 30px;
+    background: var(--bg-card);
+    border-radius: 20px;
+    border: 4px solid var(--accent-blue);
+    min-height: 200px;
+    align-items: center;
+}
+
+.memory-display-item {
+    min-width: 120px;
+    min-height: 120px;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    border: 4px solid var(--accent-yellow);
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    font-weight: bold;
+    color: var(--text-light);
+    box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4);
+}
+
+.memory-timer {
+    margin-top: 20px;
+    font-size: 2rem;
+    color: var(--accent-yellow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.memory-select-phase h3 {
+    text-align: center;
+    font-size: 1.8rem;
+    color: var(--accent-purple);
+    margin-bottom: 20px;
+}
+
+.memory-select-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    padding: 20px;
+}
+
+.memory-select-item {
+    min-width: 100px;
+    min-height: 100px;
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-card-hover));
+    border: 4px solid var(--accent-blue);
+    border-radius: 12px;
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(0, 191, 255, 0.4);
+}
+
+.memory-select-item:hover,
+.memory-select-item:focus {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+.memory-select-item.selected {
+    background: linear-gradient(135deg, var(--accent-green), #00cc77);
+    border-color: var(--accent-yellow);
+    transform: scale(1.1);
+}
+
+/* Emparejamiento */
+.pairing-game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.pairing-cards {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.pairing-card {
+    min-width: 200px;
+    min-height: 250px;
+    background: linear-gradient(135deg, var(--accent-pink), #ff1493);
+    border: 4px solid var(--accent-yellow);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 5rem;
+    font-weight: bold;
+    color: var(--text-light);
+    box-shadow: 0 8px 25px rgba(255, 105, 180, 0.5);
+}
+
+.pairing-actions {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+}
+
+.pairing-btn {
+    min-width: 150px;
+    min-height: 150px;
+    border-radius: 15px;
+    border: 4px solid;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.pairing-no {
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    border-color: var(--accent-red);
+    color: var(--text-light);
+}
+
+.pairing-yes {
+    background: linear-gradient(135deg, var(--accent-green), #00cc77);
+    border-color: var(--accent-green);
+    color: var(--text-light);
+}
+
+.pairing-btn:hover,
+.pairing-btn:focus {
+    transform: scale(1.1);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.8);
+}
+
+.pairing-btn i {
+    font-size: 3rem;
+}
+
+/* Clasificación Rápida */
+.classification-game-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.classification-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    padding: 20px;
+    background: var(--bg-card);
+    border-radius: 15px;
+    border: 3px dashed var(--accent-pink);
+    min-height: 150px;
+}
+
+.classification-item {
+    min-width: 100px;
+    min-height: 100px;
+    background: linear-gradient(135deg, var(--accent-pink), #ff1493);
+    border: 4px solid var(--accent-yellow);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--text-light);
+    cursor: move;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4);
+}
+
+.classification-item:hover,
+.classification-item:focus {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+.classification-item.dragging {
+    opacity: 0.7;
+    transform: scale(1.1);
+    z-index: 10000;
+}
+
+.classification-item.placed {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.classification-boxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.classification-box {
+    min-height: 200px;
+    border-radius: 15px;
+    border: 4px solid;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: var(--transition);
+}
+
+.classification-box h3 {
+    font-size: 1.8rem;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.classification-numbers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-height: 100px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+.classification-number-display {
+    min-width: 60px;
+    min-height: 60px;
+    background: var(--bg-card);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-light);
+    border: 2px solid var(--accent-yellow);
+}
+
+.classification-box.drag-over {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.8);
+}
+
+/* Responsive para nuevos juegos */
+@media (max-width: 768px) {
+    .memory-display-item {
+        min-width: 100px;
+        min-height: 100px;
+        font-size: 3rem;
+    }
+    
+    .memory-select-item {
+        min-width: 80px;
+        min-height: 80px;
+        font-size: 2.5rem;
+    }
+    
+    .pairing-card {
+        min-width: 150px;
+        min-height: 200px;
+        font-size: 4rem;
+    }
+    
+    .pairing-btn {
+        min-width: 120px;
+        min-height: 120px;
+        font-size: 1.2rem;
+    }
+    
+    .pairing-btn i {
+        font-size: 2.5rem;
+    }
+    
+    .classification-item {
+        min-width: 80px;
+        min-height: 80px;
+        font-size: 2.5rem;
+    }
+    
+    .classification-box {
+        min-height: 150px;
     }
 }
 
