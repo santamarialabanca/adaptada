@@ -118,6 +118,46 @@
                         <p>Ordena los números del 1 al 9</p>
                     </div>
                 </button>
+
+                <button class="game-button" data-game="quiz" aria-label="Cuestionario">
+                    <div class="button-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Cuestionario</h2>
+                        <p>Elige la respuesta correcta</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="group" aria-label="Ordenar por grupo">
+                    <div class="button-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Ordenar por Grupo</h2>
+                        <p>Clasifica los números</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="complete" aria-label="Completar">
+                    <div class="button-icon">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Completar</h2>
+                        <p>Rellena los espacios en blanco</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="cards" aria-label="Cartas al azar">
+                    <div class="button-icon">
+                        <i class="fas fa-random"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Cartas al Azar</h2>
+                        <p>Toca para ver números aleatorios</p>
+                    </div>
+                </button>
             </div>
 
             <!-- Referencia visual de números -->
@@ -491,6 +531,133 @@
         </div>
 
         <div class="feedback-message" id="reorder-feedback"></div>
+    </div>
+
+    <!-- Juego: Cuestionario -->
+    <div id="game-quiz" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Cuestionario</h2>
+            <div class="score-display">
+                <span id="quiz-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Toca la respuesta correcta</p>
+        </div>
+
+        <div class="quiz-game-container">
+            <div class="quiz-question" id="quiz-question">
+                <!-- La pregunta se genera dinámicamente -->
+            </div>
+            <div class="quiz-options" id="quiz-options">
+                <!-- Las opciones se generan dinámicamente -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="quiz-feedback"></div>
+    </div>
+
+    <!-- Juego: Ordenar por Grupo -->
+    <div id="game-group" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Ordenar por Grupo</h2>
+            <div class="score-display">
+                <span id="group-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Arrastra cada número a su grupo correcto</p>
+        </div>
+
+        <div class="group-game-container">
+            <div class="group-zones" id="group-zones">
+                <!-- Las zonas de grupo se generan dinámicamente -->
+            </div>
+            <div class="group-items" id="group-items">
+                <!-- Los números se generan dinámicamente -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="group-feedback"></div>
+    </div>
+
+    <!-- Juego: Completar -->
+    <div id="game-complete" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Completar</h2>
+            <div class="score-display">
+                <span id="complete-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Arrastra el número correcto a cada espacio en blanco</p>
+        </div>
+
+        <div class="complete-game-container">
+            <div class="complete-sentence" id="complete-sentence">
+                <!-- La frase se genera dinámicamente -->
+            </div>
+            <div class="complete-options" id="complete-options">
+                <!-- Los números disponibles se generan dinámicamente -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="complete-feedback"></div>
+    </div>
+
+    <!-- Juego: Cartas al Azar -->
+    <div id="game-cards" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Cartas al Azar</h2>
+            <div class="score-display">
+                <span id="cards-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Toca el mazo para repartir una carta y encuentra el número</p>
+        </div>
+
+        <div class="cards-game-container">
+            <div class="cards-deck" id="cards-deck">
+                <div class="deck-card">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Toca para repartir</span>
+                </div>
+            </div>
+            <div class="cards-display" id="cards-display">
+                <!-- Las cartas repartidas se muestran aquí -->
+            </div>
+            <div class="cards-target" id="cards-target">
+                <h3>Busca el número:</h3>
+                <div class="target-number-display" id="cards-target-number">1</div>
+            </div>
+        </div>
+
+        <div class="feedback-message" id="cards-feedback"></div>
     </div>
 
     <!-- Mensaje de éxito -->

@@ -11,7 +11,11 @@ const state = {
         sheep: 0,
         boxes: 0,
         flashcards: 0,
-        reorder: 0
+        reorder: 0,
+        quiz: 0,
+        group: 0,
+        complete: 0,
+        cards: 0
     },
     dragState: {
         numbers: [],
@@ -69,6 +73,30 @@ const state = {
         correctOrder: [1, 2, 3, 4, 5, 6, 7, 8, 9],
         placed: new Map()
     },
+    quizState: {
+        currentQuestion: null,
+        currentAnswer: null,
+        completed: new Set()
+    },
+    groupState: {
+        groups: [
+            { name: 'Pequeños', numbers: [1, 2, 3], color: 'blue' },
+            { name: 'Medianos', numbers: [4, 5, 6], color: 'green' },
+            { name: 'Grandes', numbers: [7, 8, 9], color: 'orange' }
+        ],
+        placed: new Map()
+    },
+    completeState: {
+        currentSentence: null,
+        blanks: [],
+        completed: new Set()
+    },
+    cardsState: {
+        deck: [],
+        drawn: [],
+        targetNumber: 1,
+        found: new Set()
+    },
     touchState: {
         activeTouch: null,
         draggedElement: null,
@@ -83,18 +111,48 @@ const state = {
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 // ========== UTILIDADES TÁCTILES PARA IPAD ==========
+// Sistema mejorado de arrastre táctil para iPad
+let activeTouchDrag = {
+    element: null,
+    startX: 0,
+    startY: 0,
+    currentX: 0,
+    currentY: 0,
+    isDragging: false,
+    callbacks: null
+};
+
 function addTouchSupport(element, onDragStart, onDrag, onDragEnd, onDrop) {
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let isDragging = false;
-    let draggedElement = null;
+    // Guardar callbacks en el elemento para acceso global
+    element._touchCallbacks = { onDragStart, onDrag, onDragEnd, onDrop };
     
     element.addEventListener('touchstart', (e) => {
+        // Solo procesar si no hay otro arrastre activo
+        if (activeTouchDrag.element && activeTouchDrag.element !== element) {
+            return;
+        }
+        
         e.preventDefault();
+        e.stopPropagation();
+        
         const touch = e.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        isDragging = false;
+        const rect = element.getBoundingClientRect();
+        
+        activeTouchDrag.element = element;
+        activeTouchDrag.startX = touch.clientX;
+        activeTouchDrag.startY = touch.clientY;
+        activeTouchDrag.currentX = touch.clientX;
+        activeTouchDrag.currentY = touch.clientY;
+        activeTouchDrag.isDragging = false;
+        activeTouchDrag.callbacks = element._touchCallbacks;
+        
+        // Guardar posición inicial del elemento
+        element._startRect = {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height
+        };
         
         if (onDragStart) {
             onDragStart(e, touch);
@@ -102,33 +160,59 @@ function addTouchSupport(element, onDragStart, onDrag, onDragEnd, onDrop) {
     }, { passive: false });
     
     element.addEventListener('touchmove', (e) => {
+        if (activeTouchDrag.element !== element) return;
+        
         e.preventDefault();
+        e.stopPropagation();
+        
         const touch = e.touches[0];
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
+        const deltaX = touch.clientX - activeTouchDrag.startX;
+        const deltaY = touch.clientY - activeTouchDrag.startY;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
-        // Si se mueve más de 10px, considerar que está arrastrando
-        if (distance > 10 && !isDragging) {
-            isDragging = true;
-            draggedElement = element;
+        activeTouchDrag.currentX = touch.clientX;
+        activeTouchDrag.currentY = touch.clientY;
+        
+        // Si se mueve más de 15px, considerar que está arrastrando
+        if (distance > 15 && !activeTouchDrag.isDragging) {
+            activeTouchDrag.isDragging = true;
+            document.body.classList.add('dragging-active');
             element.style.transition = 'none';
             element.style.zIndex = '10000';
+            element.style.position = 'fixed';
+            element.style.left = activeTouchDrag.startX - element._startRect.width / 2 + 'px';
+            element.style.top = activeTouchDrag.startY - element._startRect.height / 2 + 'px';
+            element.classList.add('dragging');
             
             if (onDrag) {
                 onDrag(e, touch, deltaX, deltaY);
             }
-        } else if (isDragging && onDrag) {
+        } else if (activeTouchDrag.isDragging && onDrag) {
+            // Actualizar posición durante el arrastre
+            element.style.left = touch.clientX - element._startRect.width / 2 + 'px';
+            element.style.top = touch.clientY - element._startRect.height / 2 + 'px';
             onDrag(e, touch, deltaX, deltaY);
         }
     }, { passive: false });
     
     element.addEventListener('touchend', (e) => {
-        e.preventDefault();
+        if (activeTouchDrag.element !== element) return;
         
-        if (isDragging && draggedElement) {
-            const touch = e.changedTouches[0];
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const touch = e.changedTouches[0];
+        
+        if (activeTouchDrag.isDragging) {
+            // Ocultar temporalmente el elemento para detectar qué hay debajo
+            const originalDisplay = element.style.display;
+            const originalOpacity = element.style.opacity;
+            element.style.display = 'none';
+            
             const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            element.style.display = originalDisplay;
+            element.style.opacity = originalOpacity;
             
             if (onDrop && elementBelow) {
                 onDrop(e, touch, elementBelow);
@@ -137,33 +221,67 @@ function addTouchSupport(element, onDragStart, onDrag, onDragEnd, onDrop) {
             if (onDragEnd) {
                 onDragEnd(e, touch);
             }
-            
-            // Resetear estilos
-            draggedElement.style.transition = '';
-            draggedElement.style.zIndex = '';
-            draggedElement.style.transform = '';
-            draggedElement = null;
+        } else {
+            // Si no se arrastró, podría ser un click simple
+            // No hacer nada aquí para evitar conflictos
         }
         
-        isDragging = false;
+        // Resetear estilos
+        resetTouchDrag(element);
+    }, { passive: false });
+    
+    element.addEventListener('touchcancel', (e) => {
+        if (activeTouchDrag.element === element) {
+            resetTouchDrag(element);
+        }
     }, { passive: false });
 }
 
-function getElementAtPoint(x, y) {
-    // Temporalmente ocultar el elemento arrastrado para encontrar el de abajo
-    const dragged = document.querySelector('.dragging');
-    if (dragged) {
-        dragged.style.pointerEvents = 'none';
+function resetTouchDrag(element) {
+    if (activeTouchDrag.element === element) {
+        document.body.classList.remove('dragging-active');
+        element.style.transition = '';
+        element.style.zIndex = '';
+        element.style.position = '';
+        element.style.left = '';
+        element.style.top = '';
+        element.style.transform = '';
+        element.style.opacity = '';
+        element.style.display = '';
+        element.classList.remove('dragging');
+        
+        activeTouchDrag.element = null;
+        activeTouchDrag.isDragging = false;
+        activeTouchDrag.callbacks = null;
     }
+}
+
+function getElementAtPoint(x, y) {
+    // Ocultar temporalmente todos los elementos arrastrados
+    const draggingElements = document.querySelectorAll('.dragging');
+    const originalDisplays = [];
+    
+    draggingElements.forEach(el => {
+        originalDisplays.push(el.style.display);
+        el.style.display = 'none';
+    });
     
     const element = document.elementFromPoint(x, y);
     
-    if (dragged) {
-        dragged.style.pointerEvents = '';
-    }
+    // Restaurar displays
+    draggingElements.forEach((el, index) => {
+        el.style.display = originalDisplays[index];
+    });
     
     return element;
 }
+
+// Prevenir scroll durante el arrastre
+document.addEventListener('touchmove', (e) => {
+    if (activeTouchDrag.isDragging) {
+        e.preventDefault();
+    }
+}, { passive: false });
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
@@ -178,6 +296,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initBoxesGame();
     initFlashcardsGame();
     initReorderGame();
+    initQuizGame();
+    initGroupGame();
+    initCompleteGame();
+    initCardsGame();
     setupGlobalTouchListeners();
 });
 
@@ -256,6 +378,22 @@ function startGame(gameType) {
             showScreen('game-reorder');
             resetReorderGame();
             break;
+        case 'quiz':
+            showScreen('game-quiz');
+            resetQuizGame();
+            break;
+        case 'group':
+            showScreen('game-group');
+            resetGroupGame();
+            break;
+        case 'complete':
+            showScreen('game-complete');
+            resetCompleteGame();
+            break;
+        case 'cards':
+            showScreen('game-cards');
+            resetCardsGame();
+            break;
     }
 }
 
@@ -308,24 +446,15 @@ function initDragGame() {
             (e, touch) => {
                 // Touch start
                 const item = e.target.closest('.drag-item');
-                if (item.classList.contains('placed')) {
+                if (item && item.classList.contains('placed')) {
+                    e.preventDefault();
                     return;
                 }
-                state.touchState.draggedElement = item;
-                state.touchState.startX = touch.clientX;
-                state.touchState.startY = touch.clientY;
-                const rect = item.getBoundingClientRect();
-                state.touchState.offsetX = touch.clientX - rect.left;
-                state.touchState.offsetY = touch.clientY - rect.top;
-                item.classList.add('dragging');
             },
             (e, touch, deltaX, deltaY) => {
                 // Touch move - arrastrar elemento
-                const item = state.touchState.draggedElement;
+                const item = activeTouchDrag.element;
                 if (item) {
-                    item.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                    item.style.opacity = '0.7';
-                    
                     // Verificar si está sobre una zona de drop
                     const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
                     const dropZone = elementBelow?.closest('.drop-zone');
@@ -338,17 +467,12 @@ function initDragGame() {
                 }
             },
             (e, touch) => {
-                // Touch end - resetear
-                const item = state.touchState.draggedElement;
-                if (item) {
-                    item.classList.remove('dragging');
-                    item.style.opacity = '';
-                }
+                // Touch end - resetear (ya se hace en resetTouchDrag)
             },
             (e, touch, elementBelow) => {
                 // Drop
-                const item = state.touchState.draggedElement;
-                if (!item) return;
+                const item = activeTouchDrag.element;
+                if (!item || item.classList.contains('placed')) return;
                 
                 const dropZone = elementBelow?.closest('.drop-zone');
                 if (dropZone) {
@@ -365,6 +489,7 @@ function initDragGame() {
                         
                         item.classList.add('placed');
                         item.setAttribute('draggable', 'false');
+                        item.style.display = 'none';
                         
                         state.dragState.placed.add(parseInt(draggedNumber));
                         state.scores.drag = state.dragState.placed.size;
@@ -384,8 +509,6 @@ function initDragGame() {
                     
                     dropZone.classList.remove('drag-over');
                 }
-                
-                state.touchState.draggedElement = null;
             }
         );
         
@@ -997,6 +1120,18 @@ document.getElementById('play-again')?.addEventListener('click', () => {
             case 'reorder':
                 resetReorderGame();
                 break;
+            case 'quiz':
+                resetQuizGame();
+                break;
+            case 'group':
+                resetGroupGame();
+                break;
+            case 'complete':
+                resetCompleteGame();
+                break;
+            case 'cards':
+                resetCardsGame();
+                break;
         }
     }
 });
@@ -1135,16 +1270,14 @@ function initVisualGame() {
             card,
             (e, touch) => {
                 const item = e.target.closest('.visual-card');
-                if (item.classList.contains('placed')) return;
-                state.touchState.draggedElement = item;
-                item.classList.add('dragging');
+                if (item && item.classList.contains('placed')) {
+                    e.preventDefault();
+                    return;
+                }
             },
             (e, touch, deltaX, deltaY) => {
-                const item = state.touchState.draggedElement;
+                const item = activeTouchDrag.element;
                 if (item) {
-                    item.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                    item.style.opacity = '0.7';
-                    
                     const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
                     const slot = elementBelow?.closest('.visual-ordering-slot');
                     document.querySelectorAll('.visual-ordering-slot').forEach(s => {
@@ -1156,15 +1289,11 @@ function initVisualGame() {
                 }
             },
             (e, touch) => {
-                const item = state.touchState.draggedElement;
-                if (item) {
-                    item.classList.remove('dragging');
-                    item.style.opacity = '';
-                }
+                // Ya se resetea en resetTouchDrag
             },
             (e, touch, elementBelow) => {
-                const item = state.touchState.draggedElement;
-                if (!item) return;
+                const item = activeTouchDrag.element;
+                if (!item || item.classList.contains('placed')) return;
                 
                 const slot = elementBelow?.closest('.visual-ordering-slot');
                 if (slot) {
@@ -1182,6 +1311,7 @@ function initVisualGame() {
                         
                         item.classList.add('placed');
                         item.setAttribute('draggable', 'false');
+                        item.style.display = 'none';
                         
                         state.visualState.placed.add(draggedOrder);
                         state.scores.visual = state.visualState.placed.size;
@@ -1212,7 +1342,7 @@ function initVisualGame() {
                     slot.classList.remove('drag-over');
                 }
                 
-                state.touchState.draggedElement = null;
+                // Ya se resetea en resetTouchDrag
             }
         );
         
@@ -1406,16 +1536,14 @@ function initLettersGame() {
             letterItem,
             (e, touch) => {
                 const item = e.target.closest('.letter-item');
-                if (item.classList.contains('placed')) return;
-                state.touchState.draggedElement = item;
-                item.classList.add('dragging');
+                if (item && item.classList.contains('placed')) {
+                    e.preventDefault();
+                    return;
+                }
             },
             (e, touch, deltaX, deltaY) => {
-                const item = state.touchState.draggedElement;
+                const item = activeTouchDrag.element;
                 if (item) {
-                    item.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                    item.style.opacity = '0.7';
-                    
                     const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
                     const zone = elementBelow?.closest('.letters-drop-zone');
                     document.querySelectorAll('.letters-drop-zone').forEach(z => {
@@ -1427,15 +1555,11 @@ function initLettersGame() {
                 }
             },
             (e, touch) => {
-                const item = state.touchState.draggedElement;
-                if (item) {
-                    item.classList.remove('dragging');
-                    item.style.opacity = '';
-                }
+                // Ya se resetea en resetTouchDrag
             },
             (e, touch, elementBelow) => {
-                const item = state.touchState.draggedElement;
-                if (!item) return;
+                const item = activeTouchDrag.element;
+                if (!item || item.classList.contains('placed')) return;
                 
                 const zone = elementBelow?.closest('.letters-drop-zone');
                 if (zone) {
@@ -1474,8 +1598,6 @@ function initLettersGame() {
                     
                     zone.classList.remove('drag-over');
                 }
-                
-                state.touchState.draggedElement = null;
             }
         );
         
@@ -2050,16 +2172,14 @@ function initReorderGame() {
             item,
             (e, touch) => {
                 const it = e.target.closest('.reorder-item');
-                if (it.classList.contains('placed')) return;
-                state.touchState.draggedElement = it;
-                it.classList.add('dragging');
+                if (it && it.classList.contains('placed')) {
+                    e.preventDefault();
+                    return;
+                }
             },
             (e, touch, deltaX, deltaY) => {
-                const it = state.touchState.draggedElement;
+                const it = activeTouchDrag.element;
                 if (it) {
-                    it.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                    it.style.opacity = '0.7';
-                    
                     const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
                     const slot = elementBelow?.closest('.reorder-slot');
                     document.querySelectorAll('.reorder-slot').forEach(s => {
@@ -2071,15 +2191,11 @@ function initReorderGame() {
                 }
             },
             (e, touch) => {
-                const it = state.touchState.draggedElement;
-                if (it) {
-                    it.classList.remove('dragging');
-                    it.style.opacity = '';
-                }
+                // Ya se resetea en resetTouchDrag
             },
             (e, touch, elementBelow) => {
-                const it = state.touchState.draggedElement;
-                if (!it) return;
+                const it = activeTouchDrag.element;
+                if (!it || it.classList.contains('placed')) return;
                 
                 const slot = elementBelow?.closest('.reorder-slot');
                 if (slot) {
@@ -2098,6 +2214,7 @@ function initReorderGame() {
                         it.classList.add('placed');
                         it.setAttribute('draggable', 'false');
                         it.style.opacity = '0.3';
+                        it.style.display = 'none';
                         
                         state.reorderState.placed.set(slotPosition, draggedNumber);
                         state.scores.reorder = state.reorderState.placed.size;
@@ -2116,8 +2233,6 @@ function initReorderGame() {
                     
                     slot.classList.remove('drag-over');
                 }
-                
-                state.touchState.draggedElement = null;
             }
         );
         
@@ -2236,6 +2351,583 @@ function resetReorderGame() {
     
     initReorderGame();
     clearFeedback('reorder-feedback');
+}
+
+// ========== JUEGO: CUESTIONARIO ==========
+function initQuizGame() {
+    const questionDiv = document.querySelector('#quiz-question');
+    const optionsDiv = document.querySelector('#quiz-options');
+    if (!questionDiv || !optionsDiv) return;
+    
+    // Seleccionar número que no haya sido completado
+    const remaining = NUMBERS.filter(n => !state.quizState.completed.has(n));
+    if (remaining.length === 0) {
+        showFeedback('quiz-feedback', '¡Completaste todas las preguntas!', 'success');
+        setTimeout(() => showSuccessModal(), 1500);
+        return;
+    }
+    
+    const targetNumber = remaining[Math.floor(Math.random() * remaining.length)];
+    state.quizState.currentAnswer = targetNumber;
+    
+    // Crear pregunta visual
+    const questionTypes = [
+        {
+            type: 'count',
+            text: '¿Cuántos elementos hay?',
+            visual: Array(targetNumber).fill(0).map(() => 
+                `<div class="quiz-dot" style="background-color: ${getColorValue(state.visualState.colors[Math.floor(Math.random() * state.visualState.colors.length)])}"></div>`
+            ).join('')
+        },
+        {
+            type: 'number',
+            text: `¿Qué número viene después del ${targetNumber - 1}?`,
+            visual: `<div class="quiz-number-sequence">${targetNumber - 1} → ?</div>`
+        },
+        {
+            type: 'before',
+            text: `¿Qué número viene antes del ${targetNumber + 1}?`,
+            visual: `<div class="quiz-number-sequence">? → ${targetNumber + 1}</div>`
+        }
+    ];
+    
+    const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+    state.quizState.currentQuestion = questionType;
+    
+    questionDiv.innerHTML = `
+        <div class="quiz-question-content">
+            <h3>${questionType.text}</h3>
+            <div class="quiz-visual">${questionType.visual}</div>
+        </div>
+    `;
+    
+    // Crear opciones (mezcladas)
+    const wrongOptions = NUMBERS.filter(n => n !== targetNumber)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+    const allOptions = [targetNumber, ...wrongOptions].sort(() => Math.random() - 0.5);
+    
+    optionsDiv.innerHTML = '';
+    allOptions.forEach(num => {
+        const optionBtn = document.createElement('button');
+        optionBtn.className = 'quiz-option-btn';
+        optionBtn.textContent = num;
+        optionBtn.setAttribute('data-number', num);
+        optionBtn.addEventListener('click', () => handleQuizAnswer(num, optionBtn));
+        optionBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleQuizAnswer(num, optionBtn);
+        }, { passive: false });
+        optionsDiv.appendChild(optionBtn);
+    });
+}
+
+function handleQuizAnswer(number, button) {
+    if (state.quizState.completed.has(state.quizState.currentAnswer)) return;
+    
+    if (number === state.quizState.currentAnswer) {
+        button.style.background = 'linear-gradient(135deg, var(--accent-green), #00cc77)';
+        button.style.transform = 'scale(1.1)';
+        button.style.borderColor = 'var(--accent-yellow)';
+        
+        state.quizState.completed.add(state.quizState.currentAnswer);
+        state.scores.quiz = state.quizState.completed.size;
+        updateScore('quiz', state.scores.quiz);
+        
+        showFeedback('quiz-feedback', `¡Correcto! La respuesta es ${number}`, 'success');
+        
+        if (state.scores.quiz === 9) {
+            setTimeout(() => showSuccessModal(), 1500);
+        } else {
+            setTimeout(() => initQuizGame(), 1500);
+        }
+    } else {
+        button.classList.add('shake');
+        showFeedback('quiz-feedback', 'Inténtalo de nuevo', 'error');
+        setTimeout(() => button.classList.remove('shake'), 500);
+    }
+}
+
+function resetQuizGame() {
+    state.quizState.completed.clear();
+    state.quizState.currentQuestion = null;
+    state.quizState.currentAnswer = null;
+    state.scores.quiz = 0;
+    updateScore('quiz', 0);
+    
+    initQuizGame();
+    clearFeedback('quiz-feedback');
+}
+
+// ========== JUEGO: ORDENAR POR GRUPO ==========
+function initGroupGame() {
+    const zonesContainer = document.querySelector('#group-zones');
+    const itemsContainer = document.querySelector('#group-items');
+    if (!zonesContainer || !itemsContainer) return;
+    
+    zonesContainer.innerHTML = '';
+    itemsContainer.innerHTML = '';
+    
+    // Crear zonas de grupo
+    state.groupState.groups.forEach((group, index) => {
+        const zone = document.createElement('div');
+        zone.className = 'group-zone';
+        zone.setAttribute('data-group-index', index);
+        zone.style.borderColor = `var(--accent-${group.color})`;
+        zone.style.background = `linear-gradient(135deg, var(--accent-${group.color}), rgba(0, 0, 0, 0.3))`;
+        
+        const title = document.createElement('h3');
+        title.textContent = group.name;
+        title.style.color = `var(--accent-${group.color})`;
+        zone.appendChild(title);
+        
+        const numbersList = document.createElement('div');
+        numbersList.className = 'group-numbers-list';
+        numbersList.setAttribute('data-group-index', index);
+        zone.appendChild(numbersList);
+        
+        zone.addEventListener('dragover', handleGroupDragOver);
+        zone.addEventListener('drop', handleGroupDrop);
+        zone.addEventListener('dragenter', handleGroupDragEnter);
+        zone.addEventListener('dragleave', handleGroupDragLeave);
+        
+        zonesContainer.appendChild(zone);
+    });
+    
+    // Crear números mezclados
+    const shuffled = [...NUMBERS].sort(() => Math.random() - 0.5);
+    
+    shuffled.forEach(num => {
+        const item = document.createElement('div');
+        item.className = 'group-item';
+        item.setAttribute('draggable', 'true');
+        item.setAttribute('data-number', num);
+        item.setAttribute('aria-label', `Número ${num}`);
+        item.textContent = num;
+        
+        item.addEventListener('dragstart', handleGroupDragStart);
+        item.addEventListener('dragend', handleGroupDragEnd);
+        
+        // Soporte táctil
+        addTouchSupport(
+            item,
+            (e, touch) => {
+                const it = e.target.closest('.group-item');
+                if (it && it.classList.contains('placed')) {
+                    e.preventDefault();
+                    return;
+                }
+            },
+            (e, touch, deltaX, deltaY) => {
+                const it = activeTouchDrag.element;
+                if (it) {
+                    const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
+                    const zone = elementBelow?.closest('.group-zone');
+                    document.querySelectorAll('.group-zone').forEach(z => {
+                        z.classList.remove('drag-over');
+                    });
+                    if (zone) {
+                        zone.classList.add('drag-over');
+                    }
+                }
+            },
+            (e, touch) => {
+                // Ya se resetea en resetTouchDrag
+            },
+            (e, touch, elementBelow) => {
+                const it = activeTouchDrag.element;
+                if (!it || it.classList.contains('placed')) return;
+                
+                const zone = elementBelow?.closest('.group-zone');
+                if (zone) {
+                    const draggedNumber = parseInt(it.getAttribute('data-number'));
+                    const groupIndex = parseInt(zone.getAttribute('data-group-index'));
+                    const group = state.groupState.groups[groupIndex];
+                    
+                    if (group.numbers.includes(draggedNumber)) {
+                        const numbersList = zone.querySelector('.group-numbers-list');
+                        const numberDisplay = document.createElement('div');
+                        numberDisplay.className = 'group-number-display';
+                        numberDisplay.textContent = draggedNumber;
+                        numbersList.appendChild(numberDisplay);
+                        
+                        it.classList.add('placed');
+                        it.setAttribute('draggable', 'false');
+                        it.style.opacity = '0.3';
+                        it.style.display = 'none';
+                        
+                        state.groupState.placed.set(draggedNumber, groupIndex);
+                        state.scores.group = state.groupState.placed.size;
+                        updateScore('group', state.scores.group);
+                        
+                        showFeedback('group-feedback', `¡Correcto! ${draggedNumber} va en ${group.name}`, 'success');
+                        
+                        if (state.scores.group === 9) {
+                            setTimeout(() => showSuccessModal(), 1500);
+                        }
+                    } else {
+                        showFeedback('group-feedback', 'Inténtalo de nuevo', 'error');
+                        zone.classList.add('shake');
+                        setTimeout(() => zone.classList.remove('shake'), 500);
+                    }
+                    
+                    zone.classList.remove('drag-over');
+                }
+                
+                // Ya se resetea en resetTouchDrag
+            }
+        );
+        
+        itemsContainer.appendChild(item);
+    });
+}
+
+function handleGroupDragStart(e) {
+    const item = e.target.closest('.group-item');
+    if (!item || item.classList.contains('placed')) {
+        e.preventDefault();
+        return;
+    }
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.getAttribute('data-number'));
+}
+
+function handleGroupDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+function handleGroupDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleGroupDragEnter(e) {
+    e.preventDefault();
+    const zone = e.target.closest('.group-zone');
+    if (zone) {
+        zone.classList.add('drag-over');
+    }
+}
+
+function handleGroupDragLeave(e) {
+    const zone = e.target.closest('.group-zone');
+    if (zone) {
+        zone.classList.remove('drag-over');
+    }
+}
+
+function handleGroupDrop(e) {
+    e.preventDefault();
+    const zone = e.target.closest('.group-zone');
+    if (!zone) return;
+    
+    zone.classList.remove('drag-over');
+    
+    const draggedNumber = parseInt(e.dataTransfer.getData('text/plain'));
+    const groupIndex = parseInt(zone.getAttribute('data-group-index'));
+    const group = state.groupState.groups[groupIndex];
+    
+    const item = document.querySelector(`.group-item[data-number="${draggedNumber}"]:not(.placed)`);
+    if (!item) return;
+    
+    if (group.numbers.includes(draggedNumber)) {
+        const numbersList = zone.querySelector('.group-numbers-list');
+        const numberDisplay = document.createElement('div');
+        numberDisplay.className = 'group-number-display';
+        numberDisplay.textContent = draggedNumber;
+        numbersList.appendChild(numberDisplay);
+        
+        item.classList.add('placed');
+        item.setAttribute('draggable', 'false');
+        item.style.opacity = '0.3';
+        
+        state.groupState.placed.set(draggedNumber, groupIndex);
+        state.scores.group = state.groupState.placed.size;
+        updateScore('group', state.scores.group);
+        
+        showFeedback('group-feedback', `¡Correcto! ${draggedNumber} va en ${group.name}`, 'success');
+        
+        if (state.scores.group === 9) {
+            setTimeout(() => showSuccessModal(), 1500);
+        }
+    } else {
+        showFeedback('group-feedback', 'Inténtalo de nuevo', 'error');
+        zone.classList.add('shake');
+        setTimeout(() => zone.classList.remove('shake'), 500);
+    }
+}
+
+function resetGroupGame() {
+    state.groupState.placed.clear();
+    state.scores.group = 0;
+    updateScore('group', 0);
+    
+    const itemsContainer = document.querySelector('#group-items');
+    if (itemsContainer) {
+        itemsContainer.querySelectorAll('.group-item').forEach(item => {
+            item.classList.remove('placed', 'dragging');
+            item.setAttribute('draggable', 'true');
+            item.style.opacity = '';
+        });
+        
+        const itemsArray = Array.from(itemsContainer.children);
+        itemsArray.sort(() => Math.random() - 0.5);
+        itemsArray.forEach(item => itemsContainer.appendChild(item));
+    }
+    
+    initGroupGame();
+    clearFeedback('group-feedback');
+}
+
+// ========== JUEGO: COMPLETAR ==========
+function initCompleteGame() {
+    const sentenceDiv = document.querySelector('#complete-sentence');
+    const optionsDiv = document.querySelector('#complete-options');
+    if (!sentenceDiv || !optionsDiv) return;
+    
+    // Seleccionar número que no haya sido completado
+    const remaining = NUMBERS.filter(n => !state.completeState.completed.has(n));
+    if (remaining.length === 0) {
+        showFeedback('complete-feedback', '¡Completaste todas las frases!', 'success');
+        setTimeout(() => showSuccessModal(), 1500);
+        return;
+    }
+    
+    const targetNumber = remaining[Math.floor(Math.random() * remaining.length)];
+    
+    const sentences = [
+        `Hay ${targetNumber} elementos`,
+        `El número ${targetNumber} es mayor que ${targetNumber - 1}`,
+        `Si tengo ${targetNumber - 1} y añado 1, tengo ${targetNumber}`,
+        `El número ${targetNumber} tiene ${targetNumber} unidades`
+    ];
+    
+    const sentence = sentences[Math.floor(Math.random() * sentences.length)];
+    const blankIndex = sentence.indexOf(String(targetNumber));
+    
+    sentenceDiv.innerHTML = `
+        <div class="complete-sentence-content">
+            ${sentence.split(String(targetNumber)).map((part, index, arr) => {
+                if (index === arr.length - 1) return part;
+                return part + `<span class="complete-blank" data-number="${targetNumber}">___</span>`;
+            }).join('')}
+        </div>
+    `;
+    
+    state.completeState.currentSentence = { text: sentence, number: targetNumber };
+    
+    // Crear opciones (mezcladas)
+    const wrongOptions = NUMBERS.filter(n => n !== targetNumber)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+    const allOptions = [targetNumber, ...wrongOptions].sort(() => Math.random() - 0.5);
+    
+    optionsDiv.innerHTML = '';
+    allOptions.forEach(num => {
+        const optionBtn = document.createElement('div');
+        optionBtn.className = 'complete-option';
+        optionBtn.setAttribute('draggable', 'true');
+        optionBtn.setAttribute('data-number', num);
+        optionBtn.textContent = num;
+        
+        optionBtn.addEventListener('dragstart', handleCompleteDragStart);
+        optionBtn.addEventListener('dragend', handleCompleteDragEnd);
+        
+        // Soporte táctil
+        addTouchSupport(
+            optionBtn,
+            (e, touch) => {
+                const it = e.target.closest('.complete-option');
+                if (it && it.classList.contains('used')) {
+                    e.preventDefault();
+                    return;
+                }
+            },
+            (e, touch, deltaX, deltaY) => {
+                const it = activeTouchDrag.element;
+                if (it) {
+                    const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
+                    const blank = elementBelow?.closest('.complete-blank');
+                    document.querySelectorAll('.complete-blank').forEach(b => {
+                        b.classList.remove('drag-over');
+                    });
+                    if (blank) {
+                        blank.classList.add('drag-over');
+                    }
+                }
+            },
+            (e, touch) => {
+                // Ya se resetea en resetTouchDrag
+            },
+            (e, touch, elementBelow) => {
+                const it = activeTouchDrag.element;
+                if (!it || it.classList.contains('used')) return;
+                
+                const blank = elementBelow?.closest('.complete-blank');
+                if (blank) {
+                    const draggedNumber = parseInt(it.getAttribute('data-number'));
+                    const correctNumber = parseInt(blank.getAttribute('data-number'));
+                    
+                    if (draggedNumber === correctNumber) {
+                        blank.textContent = draggedNumber;
+                        blank.classList.add('filled');
+                        blank.style.color = 'var(--accent-green)';
+                        blank.style.fontWeight = 'bold';
+                        
+                        it.classList.add('used');
+                        it.setAttribute('draggable', 'false');
+                        it.style.opacity = '0.3';
+                        it.style.display = 'none';
+                        
+                        state.completeState.completed.add(correctNumber);
+                        state.scores.complete = state.completeState.completed.size;
+                        updateScore('complete', state.scores.complete);
+                        
+                        showFeedback('complete-feedback', `¡Correcto! El número es ${draggedNumber}`, 'success');
+                        
+                        if (state.scores.complete === 9) {
+                            setTimeout(() => showSuccessModal(), 1500);
+                        } else {
+                            setTimeout(() => initCompleteGame(), 1500);
+                        }
+                    } else {
+                        showFeedback('complete-feedback', 'Inténtalo de nuevo', 'error');
+                        blank.classList.add('shake');
+                        setTimeout(() => blank.classList.remove('shake'), 500);
+                    }
+                    
+                    blank.classList.remove('drag-over');
+                }
+                
+                // Ya se resetea en resetTouchDrag
+            }
+        );
+        
+        optionsDiv.appendChild(optionBtn);
+    });
+}
+
+function handleCompleteDragStart(e) {
+    const item = e.target.closest('.complete-option');
+    if (!item || item.classList.contains('used')) {
+        e.preventDefault();
+        return;
+    }
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.getAttribute('data-number'));
+}
+
+function handleCompleteDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+function resetCompleteGame() {
+    state.completeState.completed.clear();
+    state.completeState.currentSentence = null;
+    state.completeState.blanks = [];
+    state.scores.complete = 0;
+    updateScore('complete', 0);
+    
+    initCompleteGame();
+    clearFeedback('complete-feedback');
+}
+
+// ========== JUEGO: CARTAS AL AZAR ==========
+function initCardsGame() {
+    const deck = document.querySelector('#cards-deck');
+    const display = document.querySelector('#cards-display');
+    const targetDiv = document.querySelector('#cards-target-number');
+    
+    if (!deck || !display || !targetDiv) return;
+    
+    // Mezclar números para el mazo
+    state.cardsState.deck = [...NUMBERS].sort(() => Math.random() - 0.5);
+    state.cardsState.drawn = [];
+    state.cardsState.found.clear();
+    
+    // Establecer número objetivo
+    const targetNumber = Math.floor(Math.random() * 9) + 1;
+    state.cardsState.targetNumber = targetNumber;
+    targetDiv.textContent = targetNumber;
+    
+    display.innerHTML = '';
+    
+    // Hacer el mazo clickeable/táctil
+    deck.onclick = drawCard;
+    deck.ontouchstart = (e) => {
+        e.preventDefault();
+        drawCard();
+    };
+}
+
+function drawCard() {
+    if (state.cardsState.deck.length === 0) {
+        showFeedback('cards-feedback', 'No quedan más cartas. Reinicia el juego.', 'error');
+        return;
+    }
+    
+    const drawnNumber = state.cardsState.deck.pop();
+    state.cardsState.drawn.push(drawnNumber);
+    
+    const display = document.querySelector('#cards-display');
+    const card = document.createElement('div');
+    card.className = 'random-card';
+    card.textContent = drawnNumber;
+    card.style.animation = 'cardFlip 0.5s ease-out';
+    
+    if (drawnNumber === state.cardsState.targetNumber) {
+        card.style.background = 'linear-gradient(135deg, var(--accent-green), #00cc77)';
+        card.style.borderColor = 'var(--accent-yellow)';
+        card.style.transform = 'scale(1.2)';
+        
+        state.cardsState.found.add(drawnNumber);
+        state.scores.cards = state.cardsState.found.size;
+        updateScore('cards', state.scores.cards);
+        
+        showFeedback('cards-feedback', `¡Encontraste el ${drawnNumber}!`, 'success');
+        
+        if (state.scores.cards === 9) {
+            setTimeout(() => showSuccessModal(), 1500);
+        } else {
+            // Nuevo número objetivo
+            const remaining = NUMBERS.filter(n => !state.cardsState.found.has(n));
+            if (remaining.length > 0) {
+                const newTarget = remaining[Math.floor(Math.random() * remaining.length)];
+                state.cardsState.targetNumber = newTarget;
+                setTimeout(() => {
+                    document.querySelector('#cards-target-number').textContent = newTarget;
+                }, 2000);
+            }
+        }
+    } else {
+        card.style.background = 'linear-gradient(135deg, var(--bg-card), var(--bg-card-hover))';
+    }
+    
+    display.appendChild(card);
+    
+    // Limitar número de cartas visibles
+    const cards = display.querySelectorAll('.random-card');
+    if (cards.length > 6) {
+        cards[0].remove();
+    }
+}
+
+function resetCardsGame() {
+    state.cardsState.deck = [];
+    state.cardsState.drawn = [];
+    state.cardsState.found.clear();
+    state.scores.cards = 0;
+    updateScore('cards', 0);
+    
+    const display = document.querySelector('#cards-display');
+    if (display) {
+        display.innerHTML = '';
+    }
+    
+    initCardsGame();
+    clearFeedback('cards-feedback');
 }
 
 // Prevenir comportamiento por defecto en drag
