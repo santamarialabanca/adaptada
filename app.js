@@ -6,7 +6,12 @@ const state = {
         connect: 0,
         match: 0,
         visual: 0,
-        letters: 0
+        letters: 0,
+        wheel: 0,
+        sheep: 0,
+        boxes: 0,
+        flashcards: 0,
+        reorder: 0
     },
     dragState: {
         numbers: [],
@@ -16,7 +21,10 @@ const state = {
     connectState: {
         selected: null,
         connections: new Map(),
-        completed: new Set()
+        completed: new Set(),
+        drawing: false,
+        startElement: null,
+        currentLine: null
     },
     matchState: {
         flipped: [],
@@ -32,11 +40,130 @@ const state = {
         vowels: ['A', 'E', 'I', 'O', 'U'],
         consonants: ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'X', 'Y', 'Z'],
         placed: new Set()
+    },
+    wheelState: {
+        currentRotation: 0,
+        isSpinning: false,
+        targetNumber: 1,
+        found: new Set()
+    },
+    sheepState: {
+        currentQuestion: null,
+        answers: [],
+        correctAnswer: null,
+        completed: new Set()
+    },
+    boxesState: {
+        opened: new Set(),
+        numbers: []
+    },
+    flashcardsState: {
+        currentIndex: 0,
+        cards: [],
+        flipped: false,
+        completed: new Set()
+    },
+    reorderState: {
+        items: [],
+        slots: [],
+        correctOrder: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        placed: new Map()
+    },
+    touchState: {
+        activeTouch: null,
+        draggedElement: null,
+        startX: 0,
+        startY: 0,
+        offsetX: 0,
+        offsetY: 0
     }
 };
 
 // Números del 1 al 9
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+// ========== UTILIDADES TÁCTILES PARA IPAD ==========
+function addTouchSupport(element, onDragStart, onDrag, onDragEnd, onDrop) {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isDragging = false;
+    let draggedElement = null;
+    
+    element.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        isDragging = false;
+        
+        if (onDragStart) {
+            onDragStart(e, touch);
+        }
+    }, { passive: false });
+    
+    element.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        // Si se mueve más de 10px, considerar que está arrastrando
+        if (distance > 10 && !isDragging) {
+            isDragging = true;
+            draggedElement = element;
+            element.style.transition = 'none';
+            element.style.zIndex = '10000';
+            
+            if (onDrag) {
+                onDrag(e, touch, deltaX, deltaY);
+            }
+        } else if (isDragging && onDrag) {
+            onDrag(e, touch, deltaX, deltaY);
+        }
+    }, { passive: false });
+    
+    element.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        
+        if (isDragging && draggedElement) {
+            const touch = e.changedTouches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            if (onDrop && elementBelow) {
+                onDrop(e, touch, elementBelow);
+            }
+            
+            if (onDragEnd) {
+                onDragEnd(e, touch);
+            }
+            
+            // Resetear estilos
+            draggedElement.style.transition = '';
+            draggedElement.style.zIndex = '';
+            draggedElement.style.transform = '';
+            draggedElement = null;
+        }
+        
+        isDragging = false;
+    }, { passive: false });
+}
+
+function getElementAtPoint(x, y) {
+    // Temporalmente ocultar el elemento arrastrado para encontrar el de abajo
+    const dragged = document.querySelector('.dragging');
+    if (dragged) {
+        dragged.style.pointerEvents = 'none';
+    }
+    
+    const element = document.elementFromPoint(x, y);
+    
+    if (dragged) {
+        dragged.style.pointerEvents = '';
+    }
+    
+    return element;
+}
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
@@ -46,6 +173,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initMatchGame();
     initVisualGame();
     initLettersGame();
+    initWheelGame();
+    initSheepGame();
+    initBoxesGame();
+    initFlashcardsGame();
+    initReorderGame();
+    setupGlobalTouchListeners();
 });
 
 // Menú Principal
@@ -103,6 +236,26 @@ function startGame(gameType) {
             showScreen('game-letters');
             resetLettersGame();
             break;
+        case 'wheel':
+            showScreen('game-wheel');
+            resetWheelGame();
+            break;
+        case 'sheep':
+            showScreen('game-sheep');
+            resetSheepGame();
+            break;
+        case 'boxes':
+            showScreen('game-boxes');
+            resetBoxesGame();
+            break;
+        case 'flashcards':
+            showScreen('game-flashcards');
+            resetFlashcardsGame();
+            break;
+        case 'reorder':
+            showScreen('game-reorder');
+            resetReorderGame();
+            break;
     }
 }
 
@@ -148,6 +301,93 @@ function initDragGame() {
         
         dragItem.addEventListener('dragstart', handleDragStart);
         dragItem.addEventListener('dragend', handleDragEnd);
+        
+        // Soporte táctil para iPad
+        addTouchSupport(
+            dragItem,
+            (e, touch) => {
+                // Touch start
+                const item = e.target.closest('.drag-item');
+                if (item.classList.contains('placed')) {
+                    return;
+                }
+                state.touchState.draggedElement = item;
+                state.touchState.startX = touch.clientX;
+                state.touchState.startY = touch.clientY;
+                const rect = item.getBoundingClientRect();
+                state.touchState.offsetX = touch.clientX - rect.left;
+                state.touchState.offsetY = touch.clientY - rect.top;
+                item.classList.add('dragging');
+            },
+            (e, touch, deltaX, deltaY) => {
+                // Touch move - arrastrar elemento
+                const item = state.touchState.draggedElement;
+                if (item) {
+                    item.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                    item.style.opacity = '0.7';
+                    
+                    // Verificar si está sobre una zona de drop
+                    const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
+                    const dropZone = elementBelow?.closest('.drop-zone');
+                    document.querySelectorAll('.drop-zone').forEach(zone => {
+                        zone.classList.remove('drag-over');
+                    });
+                    if (dropZone && !dropZone.classList.contains('filled')) {
+                        dropZone.classList.add('drag-over');
+                    }
+                }
+            },
+            (e, touch) => {
+                // Touch end - resetear
+                const item = state.touchState.draggedElement;
+                if (item) {
+                    item.classList.remove('dragging');
+                    item.style.opacity = '';
+                }
+            },
+            (e, touch, elementBelow) => {
+                // Drop
+                const item = state.touchState.draggedElement;
+                if (!item) return;
+                
+                const dropZone = elementBelow?.closest('.drop-zone');
+                if (dropZone) {
+                    const draggedNumber = item.getAttribute('data-number');
+                    const targetNumber = dropZone.getAttribute('data-number');
+                    
+                    if (draggedNumber === targetNumber) {
+                        // Correcto
+                        dropZone.classList.add('filled');
+                        dropZone.innerHTML = draggedNumber;
+                        dropZone.style.fontSize = '4rem';
+                        dropZone.style.fontWeight = 'bold';
+                        dropZone.style.color = 'var(--accent-green)';
+                        
+                        item.classList.add('placed');
+                        item.setAttribute('draggable', 'false');
+                        
+                        state.dragState.placed.add(parseInt(draggedNumber));
+                        state.scores.drag = state.dragState.placed.size;
+                        updateScore('drag', state.scores.drag);
+                        
+                        showFeedback('drag-feedback', `¡Correcto! Número ${draggedNumber}`, 'success');
+                        
+                        if (state.scores.drag === 9) {
+                            setTimeout(() => showSuccessModal(), 1000);
+                        }
+                    } else {
+                        // Incorrecto
+                        showFeedback('drag-feedback', 'Inténtalo de nuevo', 'error');
+                        dropZone.classList.add('shake');
+                        setTimeout(() => dropZone.classList.remove('shake'), 500);
+                    }
+                    
+                    dropZone.classList.remove('drag-over');
+                }
+                
+                state.touchState.draggedElement = null;
+            }
+        );
         
         dragItemsContainer.appendChild(dragItem);
     });
@@ -304,6 +544,9 @@ function initConnectGame() {
             }
         });
         
+        // Soporte táctil para dibujar líneas
+        addTouchSupportForConnect(item, leftContainer, rightContainer);
+        
         leftContainer.appendChild(item);
     });
 
@@ -329,6 +572,9 @@ function initConnectGame() {
                 handleConnectClick(item);
             }
         });
+        
+        // Soporte táctil para dibujar líneas
+        addTouchSupportForConnect(item, leftContainer, rightContainer);
         
         rightContainer.appendChild(item);
     });
@@ -394,6 +640,127 @@ function handleConnectClick(item) {
     }
 }
 
+function addTouchSupportForConnect(item, leftContainer, rightContainer) {
+    const svg = document.querySelector('#connect-svg');
+    
+    item.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (item.classList.contains('connected')) return;
+        if (state.connectState.drawing) return; // Ya hay un dibujo en curso
+        
+        const touch = e.touches[0];
+        state.connectState.drawing = true;
+        state.connectState.startElement = item;
+        
+        // Resaltar elemento inicial
+        item.classList.add('selected');
+        
+        // Crear línea temporal para dibujar
+        const rect = item.getBoundingClientRect();
+        const svgRect = svg.getBoundingClientRect();
+        const startX = rect.left + rect.width / 2 - svgRect.left;
+        const startY = rect.top + rect.height / 2 - svgRect.top;
+        
+        state.connectState.currentLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        state.connectState.currentLine.setAttribute('x1', startX);
+        state.connectState.currentLine.setAttribute('y1', startY);
+        state.connectState.currentLine.setAttribute('x2', startX);
+        state.connectState.currentLine.setAttribute('y2', startY);
+        state.connectState.currentLine.classList.add('connection-line');
+        state.connectState.currentLine.classList.add('drawing');
+        state.connectState.currentLine.style.stroke = '#ffd700';
+        state.connectState.currentLine.style.strokeWidth = '4';
+        svg.appendChild(state.connectState.currentLine);
+    }, { passive: false });
+}
+
+// Event listeners globales para el dibujo táctil (una sola vez)
+let touchMoveListenerAdded = false;
+let touchEndListenerAdded = false;
+
+function setupGlobalTouchListeners() {
+    if (touchMoveListenerAdded && touchEndListenerAdded) return;
+    
+    document.addEventListener('touchmove', (e) => {
+        if (!state.connectState.drawing || !state.connectState.currentLine) return;
+        e.preventDefault();
+        
+        const touch = e.touches[0];
+        const svg = document.querySelector('#connect-svg');
+        if (!svg) return;
+        
+        const svgRect = svg.getBoundingClientRect();
+        const currentX = touch.clientX - svgRect.left;
+        const currentY = touch.clientY - svgRect.top;
+        
+        // Actualizar línea mientras se dibuja
+        const startX = parseFloat(state.connectState.currentLine.getAttribute('x1'));
+        const startY = parseFloat(state.connectState.currentLine.getAttribute('y1'));
+        state.connectState.currentLine.setAttribute('x2', currentX);
+        state.connectState.currentLine.setAttribute('y2', currentY);
+    }, { passive: false });
+    touchMoveListenerAdded = true;
+    
+    document.addEventListener('touchend', (e) => {
+        if (!state.connectState.drawing || !state.connectState.startElement) return;
+        e.preventDefault();
+        
+        const touch = e.changedTouches[0];
+        const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
+        const endElement = elementBelow?.closest('.connect-item');
+        
+        // Eliminar línea temporal de dibujo
+        if (state.connectState.currentLine) {
+            state.connectState.currentLine.remove();
+            state.connectState.currentLine = null;
+        }
+        
+        const startElement = state.connectState.startElement;
+        
+        if (endElement && endElement !== startElement && !endElement.classList.contains('connected')) {
+            const startSide = startElement.getAttribute('data-side');
+            const endSide = endElement.getAttribute('data-side');
+            const startNumber = parseInt(startElement.getAttribute('data-number'));
+            const endNumber = parseInt(endElement.getAttribute('data-number'));
+            
+            // Solo permitir conectar si son de lados diferentes
+            if (startSide !== endSide) {
+                if (startNumber === endNumber) {
+                    // Correcto
+                    drawConnection(startElement, endElement, true);
+                    startElement.classList.add('connected');
+                    endElement.classList.add('connected');
+                    
+                    state.connectState.completed.add(startNumber);
+                    state.scores.connect = state.connectState.completed.size;
+                    updateScore('connect', state.scores.connect);
+                    
+                    showFeedback('connect-feedback', `¡Correcto! Número ${startNumber}`, 'success');
+                    
+                    if (state.scores.connect === 9) {
+                        setTimeout(() => showSuccessModal(), 1000);
+                    }
+                } else {
+                    // Incorrecto
+                    drawConnection(startElement, endElement, false);
+                    setTimeout(() => {
+                        const svg = document.querySelector('#connect-svg');
+                        const lastLine = svg.querySelector('.connection-line:last-child');
+                        if (lastLine) lastLine.remove();
+                    }, 1000);
+                    
+                    showFeedback('connect-feedback', 'Inténtalo de nuevo', 'error');
+                }
+            }
+        }
+        
+        startElement.classList.remove('selected');
+        state.connectState.drawing = false;
+        state.connectState.startElement = null;
+    }, { passive: false });
+    touchEndListenerAdded = true;
+}
+
 function drawConnection(leftItem, rightItem, isCorrect) {
     const svg = document.querySelector('#connect-svg');
     const leftRect = leftItem.getBoundingClientRect();
@@ -421,6 +788,12 @@ function resetConnectGame() {
     state.connectState.selected = null;
     state.connectState.completed.clear();
     state.connectState.connections.clear();
+    state.connectState.drawing = false;
+    state.connectState.startElement = null;
+    if (state.connectState.currentLine) {
+        state.connectState.currentLine.remove();
+        state.connectState.currentLine = null;
+    }
     updateScore('connect', 0);
     
     const container = document.querySelector('#game-connect .connect-game-container');
@@ -606,6 +979,24 @@ document.getElementById('play-again')?.addEventListener('click', () => {
             case 'visual':
                 resetVisualGame();
                 break;
+            case 'letters':
+                resetLettersGame();
+                break;
+            case 'wheel':
+                resetWheelGame();
+                break;
+            case 'sheep':
+                resetSheepGame();
+                break;
+            case 'boxes':
+                resetBoxesGame();
+                break;
+            case 'flashcards':
+                resetFlashcardsGame();
+                break;
+            case 'reorder':
+                resetReorderGame();
+                break;
         }
     }
 });
@@ -738,6 +1129,92 @@ function initVisualGame() {
         // Eventos de arrastre
         card.addEventListener('dragstart', handleVisualDragStart);
         card.addEventListener('dragend', handleVisualDragEnd);
+        
+        // Soporte táctil para iPad
+        addTouchSupport(
+            card,
+            (e, touch) => {
+                const item = e.target.closest('.visual-card');
+                if (item.classList.contains('placed')) return;
+                state.touchState.draggedElement = item;
+                item.classList.add('dragging');
+            },
+            (e, touch, deltaX, deltaY) => {
+                const item = state.touchState.draggedElement;
+                if (item) {
+                    item.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                    item.style.opacity = '0.7';
+                    
+                    const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
+                    const slot = elementBelow?.closest('.visual-ordering-slot');
+                    document.querySelectorAll('.visual-ordering-slot').forEach(s => {
+                        s.classList.remove('drag-over');
+                    });
+                    if (slot && !slot.classList.contains('filled')) {
+                        slot.classList.add('drag-over');
+                    }
+                }
+            },
+            (e, touch) => {
+                const item = state.touchState.draggedElement;
+                if (item) {
+                    item.classList.remove('dragging');
+                    item.style.opacity = '';
+                }
+            },
+            (e, touch, elementBelow) => {
+                const item = state.touchState.draggedElement;
+                if (!item) return;
+                
+                const slot = elementBelow?.closest('.visual-ordering-slot');
+                if (slot) {
+                    const draggedOrder = parseInt(item.getAttribute('data-order'));
+                    const slotIndex = parseInt(slot.getAttribute('data-index'));
+                    const expectedOrder = slotIndex + 1;
+                    
+                    if (draggedOrder === expectedOrder) {
+                        slot.classList.add('filled');
+                        const cardClone = item.cloneNode(true);
+                        cardClone.classList.remove('dragging');
+                        cardClone.classList.add('placed-card');
+                        cardClone.setAttribute('draggable', 'false');
+                        slot.appendChild(cardClone);
+                        
+                        item.classList.add('placed');
+                        item.setAttribute('draggable', 'false');
+                        
+                        state.visualState.placed.add(draggedOrder);
+                        state.scores.visual = state.visualState.placed.size;
+                        updateScore('visual', state.scores.visual);
+                        
+                        showFeedback('visual-feedback', `¡Correcto! Orden ${draggedOrder}`, 'success');
+                        
+                        if (state.scores.visual === state.visualState.currentNumber) {
+                            setTimeout(() => {
+                                if (state.visualState.currentNumber < 9) {
+                                    state.visualState.currentNumber++;
+                                    state.visualState.placed.clear();
+                                    state.scores.visual = 0;
+                                    updateScore('visual', 0);
+                                    initVisualGame();
+                                    showFeedback('visual-feedback', `¡Siguiente número: ${state.visualState.currentNumber}!`, 'success');
+                                } else {
+                                    setTimeout(() => showSuccessModal(), 1000);
+                                }
+                            }, 1500);
+                        }
+                    } else {
+                        showFeedback('visual-feedback', 'Inténtalo de nuevo', 'error');
+                        slot.classList.add('shake');
+                        setTimeout(() => slot.classList.remove('shake'), 500);
+                    }
+                    
+                    slot.classList.remove('drag-over');
+                }
+                
+                state.touchState.draggedElement = null;
+            }
+        );
         
         cardsContainer.appendChild(card);
     });
@@ -924,6 +1401,84 @@ function initLettersGame() {
         letterItem.addEventListener('dragstart', handleLetterDragStart);
         letterItem.addEventListener('dragend', handleLetterDragEnd);
         
+        // Soporte táctil para iPad
+        addTouchSupport(
+            letterItem,
+            (e, touch) => {
+                const item = e.target.closest('.letter-item');
+                if (item.classList.contains('placed')) return;
+                state.touchState.draggedElement = item;
+                item.classList.add('dragging');
+            },
+            (e, touch, deltaX, deltaY) => {
+                const item = state.touchState.draggedElement;
+                if (item) {
+                    item.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                    item.style.opacity = '0.7';
+                    
+                    const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
+                    const zone = elementBelow?.closest('.letters-drop-zone');
+                    document.querySelectorAll('.letters-drop-zone').forEach(z => {
+                        z.classList.remove('drag-over');
+                    });
+                    if (zone) {
+                        zone.classList.add('drag-over');
+                    }
+                }
+            },
+            (e, touch) => {
+                const item = state.touchState.draggedElement;
+                if (item) {
+                    item.classList.remove('dragging');
+                    item.style.opacity = '';
+                }
+            },
+            (e, touch, elementBelow) => {
+                const item = state.touchState.draggedElement;
+                if (!item) return;
+                
+                const zone = elementBelow?.closest('.letters-drop-zone');
+                if (zone) {
+                    const letter = item.getAttribute('data-letter');
+                    const isVowel = state.lettersState.vowels.includes(letter);
+                    const isVowelZone = zone.classList.contains('vowel-zone');
+                    
+                    if ((isVowel && isVowelZone) || (!isVowel && !isVowelZone)) {
+                        const letterClone = item.cloneNode(true);
+                        letterClone.classList.remove('dragging');
+                        letterClone.classList.add('placed-letter');
+                        letterClone.setAttribute('draggable', 'false');
+                        letterClone.style.fontSize = '2.5rem';
+                        zone.appendChild(letterClone);
+                        
+                        item.classList.add('placed');
+                        item.setAttribute('draggable', 'false');
+                        item.style.opacity = '0.3';
+                        
+                        state.lettersState.placed.add(letter);
+                        state.scores.letters = state.lettersState.placed.size;
+                        updateScore('letters', state.scores.letters);
+                        
+                        const type = isVowel ? 'vocal' : 'consonante';
+                        showFeedback('letters-feedback', `¡Correcto! La ${letter} es una ${type}`, 'success');
+                        
+                        const allLetters = [...state.lettersState.vowels, ...state.lettersState.consonants];
+                        if (state.scores.letters === allLetters.length) {
+                            setTimeout(() => showSuccessModal(), 1000);
+                        }
+                    } else {
+                        showFeedback('letters-feedback', 'Inténtalo de nuevo', 'error');
+                        zone.classList.add('shake');
+                        setTimeout(() => zone.classList.remove('shake'), 500);
+                    }
+                    
+                    zone.classList.remove('drag-over');
+                }
+                
+                state.touchState.draggedElement = null;
+            }
+        );
+        
         itemsContainer.appendChild(letterItem);
     });
 
@@ -1042,6 +1597,645 @@ function resetLettersGame() {
     initLettersGame();
     
     clearFeedback('letters-feedback');
+}
+
+// ========== JUEGO: RUEDA ALEATORIA ==========
+function initWheelGame() {
+    const svg = document.querySelector('#wheel-svg');
+    if (!svg) return;
+    
+    svg.innerHTML = '';
+    const centerX = 200;
+    const centerY = 200;
+    const radius = 180;
+    const numSegments = 9;
+    const anglePerSegment = (2 * Math.PI) / numSegments;
+    const colors = state.visualState.colors;
+    
+    // Crear segmentos de la rueda
+    NUMBERS.forEach((num, index) => {
+        const startAngle = index * anglePerSegment - Math.PI / 2;
+        const endAngle = (index + 1) * anglePerSegment - Math.PI / 2;
+        
+        const x1 = centerX + radius * Math.cos(startAngle);
+        const y1 = centerY + radius * Math.sin(startAngle);
+        const x2 = centerX + radius * Math.cos(endAngle);
+        const y2 = centerY + radius * Math.sin(endAngle);
+        
+        const largeArc = anglePerSegment > Math.PI ? 1 : 0;
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const pathData = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+        path.setAttribute('d', pathData);
+        path.setAttribute('fill', getColorValue(colors[index % colors.length]));
+        path.setAttribute('stroke', '#ffffff');
+        path.setAttribute('stroke-width', '3');
+        path.setAttribute('data-number', num);
+        path.classList.add('wheel-segment');
+        
+        // Texto del número
+        const textAngle = startAngle + anglePerSegment / 2;
+        const textX = centerX + (radius * 0.7) * Math.cos(textAngle);
+        const textY = centerY + (radius * 0.7) * Math.sin(textAngle);
+        
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', textX);
+        text.setAttribute('y', textY);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('dominant-baseline', 'middle');
+        text.setAttribute('font-size', '36');
+        text.setAttribute('font-weight', 'bold');
+        text.setAttribute('fill', '#000000');
+        text.textContent = num;
+        
+        svg.appendChild(path);
+        svg.appendChild(text);
+    });
+    
+    // Hacer la rueda clickeable/táctil
+    svg.addEventListener('click', spinWheel);
+    svg.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        spinWheel();
+    }, { passive: false });
+    
+    // Establecer número objetivo
+    const targetNumber = Math.floor(Math.random() * 9) + 1;
+    state.wheelState.targetNumber = targetNumber;
+    document.getElementById('target-number-display').textContent = targetNumber;
+}
+
+function spinWheel() {
+    if (state.wheelState.isSpinning) return;
+    
+    state.wheelState.isSpinning = true;
+    const svg = document.querySelector('#wheel-svg');
+    const resultDiv = document.querySelector('#wheel-result .result-number');
+    const resultText = document.querySelector('#wheel-result p');
+    
+    // Rotación aleatoria (múltiplos de 360 + extra)
+    const extraRotation = Math.random() * 360;
+    const fullRotations = 5 + Math.floor(Math.random() * 5); // 5-9 vueltas completas
+    const totalRotation = state.wheelState.currentRotation + (fullRotations * 360) + extraRotation;
+    
+    state.wheelState.currentRotation = totalRotation % 360;
+    
+    svg.style.transition = 'transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+    svg.style.transform = `rotate(${totalRotation}deg)`;
+    
+    resultDiv.textContent = '?';
+    resultText.textContent = 'Girando...';
+    
+    setTimeout(() => {
+        // Calcular qué número está en la parte superior (apuntador)
+        const normalizedRotation = (360 - (state.wheelState.currentRotation % 360)) % 360;
+        const segmentAngle = 360 / 9; // 40 grados por segmento
+        const segmentIndex = Math.floor(normalizedRotation / segmentAngle);
+        const landedNumber = NUMBERS[segmentIndex];
+        
+        resultDiv.textContent = landedNumber;
+        resultDiv.style.fontSize = '5rem';
+        resultDiv.style.color = 'var(--accent-yellow)';
+        
+        if (landedNumber === state.wheelState.targetNumber) {
+            showFeedback('wheel-feedback', `¡Encontraste el ${landedNumber}!`, 'success');
+            state.wheelState.found.add(landedNumber);
+            state.scores.wheel = state.wheelState.found.size;
+            updateScore('wheel', state.scores.wheel);
+            
+            if (state.scores.wheel === 9) {
+                setTimeout(() => showSuccessModal(), 1500);
+            } else {
+                // Nuevo número objetivo
+                const remaining = NUMBERS.filter(n => !state.wheelState.found.has(n));
+                const newTarget = remaining[Math.floor(Math.random() * remaining.length)];
+                state.wheelState.targetNumber = newTarget;
+                setTimeout(() => {
+                    document.getElementById('target-number-display').textContent = newTarget;
+                    resultText.textContent = `Busca el número ${newTarget}`;
+                }, 2000);
+            }
+        } else {
+            showFeedback('wheel-feedback', `Salió ${landedNumber}, pero buscas ${state.wheelState.targetNumber}`, 'error');
+            resultText.textContent = `Sigue buscando el ${state.wheelState.targetNumber}`;
+        }
+        
+        state.wheelState.isSpinning = false;
+    }, 3000);
+}
+
+function resetWheelGame() {
+    state.wheelState.currentRotation = 0;
+    state.wheelState.isSpinning = false;
+    state.wheelState.found.clear();
+    state.scores.wheel = 0;
+    updateScore('wheel', 0);
+    
+    const svg = document.querySelector('#wheel-svg');
+    if (svg) {
+        svg.style.transform = 'rotate(0deg)';
+        svg.style.transition = '';
+    }
+    
+    const resultDiv = document.querySelector('#wheel-result .result-number');
+    const resultText = document.querySelector('#wheel-result p');
+    if (resultDiv) {
+        resultDiv.textContent = '?';
+        resultDiv.style.fontSize = '';
+        resultDiv.style.color = '';
+    }
+    if (resultText) {
+        resultText.textContent = 'Toca la rueda para comenzar';
+    }
+    
+    initWheelGame();
+    clearFeedback('wheel-feedback');
+}
+
+// ========== JUEGO: CADA OVEJA CON SU PAREJA ==========
+function initSheepGame() {
+    const questionDiv = document.querySelector('#sheep-question');
+    const answersDiv = document.querySelector('#sheep-answers');
+    if (!questionDiv || !answersDiv) return;
+    
+    // Seleccionar número aleatorio que no haya sido completado
+    const remaining = NUMBERS.filter(n => !state.sheepState.completed.has(n));
+    if (remaining.length === 0) {
+        showFeedback('sheep-feedback', '¡Completaste todos los números!', 'success');
+        return;
+    }
+    
+    const targetNumber = remaining[Math.floor(Math.random() * remaining.length)];
+    state.sheepState.correctAnswer = targetNumber;
+    
+    // Crear pregunta
+    questionDiv.innerHTML = `
+        <div class="sheep-question-content">
+            <h3>¿Cuántos elementos hay?</h3>
+            <div class="sheep-visual">
+                ${Array(targetNumber).fill(0).map(() => 
+                    `<div class="sheep-dot" style="background-color: ${getColorValue(state.visualState.colors[Math.floor(Math.random() * state.visualState.colors.length)])}"></div>`
+                ).join('')}
+            </div>
+        </div>
+    `;
+    
+    // Crear respuestas (mezcladas)
+    const wrongAnswers = NUMBERS.filter(n => n !== targetNumber)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+    const allAnswers = [targetNumber, ...wrongAnswers].sort(() => Math.random() - 0.5);
+    state.sheepState.answers = allAnswers;
+    
+    answersDiv.innerHTML = '';
+    allAnswers.forEach(num => {
+        const answerBtn = document.createElement('button');
+        answerBtn.className = 'sheep-answer-btn';
+        answerBtn.textContent = num;
+        answerBtn.setAttribute('data-number', num);
+        answerBtn.addEventListener('click', () => handleSheepAnswer(num, answerBtn));
+        answerBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleSheepAnswer(num, answerBtn);
+        }, { passive: false });
+        answersDiv.appendChild(answerBtn);
+    });
+}
+
+function handleSheepAnswer(number, button) {
+    if (state.sheepState.completed.has(state.sheepState.correctAnswer)) {
+        // Ya se completó esta pregunta
+        return;
+    }
+    
+    if (number === state.sheepState.correctAnswer) {
+        // Correcto
+        button.style.background = 'linear-gradient(135deg, var(--accent-green), #00cc77)';
+        button.style.transform = 'scale(1.1)';
+        button.style.opacity = '0';
+        setTimeout(() => button.remove(), 500);
+        
+        state.sheepState.completed.add(state.sheepState.correctAnswer);
+        state.scores.sheep = state.sheepState.completed.size;
+        updateScore('sheep', state.scores.sheep);
+        
+        showFeedback('sheep-feedback', `¡Correcto! ${number} elementos`, 'success');
+        
+        if (state.scores.sheep === 9) {
+            setTimeout(() => showSuccessModal(), 1500);
+        } else {
+            setTimeout(() => initSheepGame(), 1500);
+        }
+    } else {
+        // Incorrecto
+        button.classList.add('shake');
+        showFeedback('sheep-feedback', 'Inténtalo de nuevo', 'error');
+        setTimeout(() => button.classList.remove('shake'), 500);
+    }
+}
+
+function resetSheepGame() {
+    state.sheepState.completed.clear();
+    state.sheepState.currentQuestion = null;
+    state.sheepState.answers = [];
+    state.sheepState.correctAnswer = null;
+    state.scores.sheep = 0;
+    updateScore('sheep', 0);
+    
+    initSheepGame();
+    clearFeedback('sheep-feedback');
+}
+
+// ========== JUEGO: ABRECAJAS ==========
+function initBoxesGame() {
+    const grid = document.querySelector('#boxes-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    
+    // Mezclar números
+    const shuffled = [...NUMBERS].sort(() => Math.random() - 0.5);
+    state.boxesState.numbers = shuffled;
+    state.boxesState.opened.clear();
+    
+    shuffled.forEach((num, index) => {
+        const box = document.createElement('div');
+        box.className = 'box-item';
+        box.setAttribute('data-number', num);
+        box.setAttribute('data-index', index);
+        box.setAttribute('aria-label', `Caja ${index + 1}`);
+        
+        box.innerHTML = `
+            <div class="box-front">
+                <i class="fas fa-box"></i>
+                <span>Caja ${index + 1}</span>
+            </div>
+            <div class="box-back">
+                <div class="box-number">${num}</div>
+            </div>
+        `;
+        
+        box.addEventListener('click', () => openBox(box, num));
+        box.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            openBox(box, num);
+        }, { passive: false });
+        
+        grid.appendChild(box);
+    });
+}
+
+function openBox(box, number) {
+    if (state.boxesState.opened.has(number)) return;
+    
+    box.classList.add('opened');
+    state.boxesState.opened.add(number);
+    state.scores.boxes = state.boxesState.opened.size;
+    updateScore('boxes', state.scores.boxes);
+    
+    showFeedback('boxes-feedback', `¡Encontraste el número ${number}!`, 'success');
+    
+    if (state.scores.boxes === 9) {
+        setTimeout(() => showSuccessModal(), 1500);
+    }
+}
+
+function resetBoxesGame() {
+    state.boxesState.opened.clear();
+    state.boxesState.numbers = [];
+    state.scores.boxes = 0;
+    updateScore('boxes', 0);
+    
+    const grid = document.querySelector('#boxes-grid');
+    if (grid) {
+        grid.querySelectorAll('.box-item').forEach(box => {
+            box.classList.remove('opened');
+        });
+    }
+    
+    initBoxesGame();
+    clearFeedback('boxes-feedback');
+}
+
+// ========== JUEGO: TARJETAS FLASH ==========
+function initFlashcardsGame() {
+    // Crear tarjetas flash para cada número
+    state.flashcardsState.cards = NUMBERS.map(num => ({
+        question: `¿Cuántos elementos hay?`,
+        answer: num,
+        visual: Array(num).fill(0).map(() => 
+            `<div class="flashcard-dot" style="background-color: ${getColorValue(state.visualState.colors[Math.floor(Math.random() * state.visualState.colors.length)])}"></div>`
+        ).join('')
+    }));
+    
+    state.flashcardsState.currentIndex = 0;
+    state.flashcardsState.flipped = false;
+    state.flashcardsState.completed.clear();
+    
+    showFlashcard();
+}
+
+function showFlashcard() {
+    const card = state.flashcardsState.cards[state.flashcardsState.currentIndex];
+    const flashcard = document.querySelector('#flashcard');
+    const questionDiv = document.querySelector('#flashcard-question');
+    const answerDiv = document.querySelector('#flashcard-answer');
+    
+    if (!flashcard || !questionDiv || !answerDiv) return;
+    
+    flashcard.classList.remove('flipped');
+    state.flashcardsState.flipped = false;
+    
+    questionDiv.innerHTML = `
+        <div class="flashcard-visual">${card.visual}</div>
+        <div class="flashcard-question-text">${card.question}</div>
+    `;
+    
+    answerDiv.innerHTML = `
+        <div class="flashcard-answer-number">${card.answer}</div>
+        <div class="flashcard-answer-text">elementos</div>
+    `;
+    
+    // Hacer la tarjeta clickeable/táctil
+    flashcard.onclick = flipFlashcard;
+    flashcard.ontouchstart = (e) => {
+        e.preventDefault();
+        flipFlashcard();
+    };
+}
+
+function flipFlashcard() {
+    const flashcard = document.querySelector('#flashcard');
+    if (!flashcard) return;
+    
+    state.flashcardsState.flipped = !state.flashcardsState.flipped;
+    flashcard.classList.toggle('flipped', state.flashcardsState.flipped);
+}
+
+function nextFlashcard() {
+    if (state.flashcardsState.currentIndex < state.flashcardsState.cards.length - 1) {
+        state.flashcardsState.currentIndex++;
+        showFlashcard();
+    } else {
+        // Completado
+        showFeedback('flashcards-feedback', '¡Completaste todas las tarjetas!', 'success');
+        setTimeout(() => showSuccessModal(), 1500);
+    }
+}
+
+function resetFlashcardsGame() {
+    state.flashcardsState.currentIndex = 0;
+    state.flashcardsState.flipped = false;
+    state.flashcardsState.completed.clear();
+    state.scores.flashcards = 0;
+    updateScore('flashcards', 0);
+    
+    initFlashcardsGame();
+    clearFeedback('flashcards-feedback');
+}
+
+// Botón siguiente de flashcards
+document.getElementById('flashcard-next')?.addEventListener('click', () => {
+    if (state.flashcardsState.flipped) {
+        nextFlashcard();
+    } else {
+        showFeedback('flashcards-feedback', 'Primero voltea la tarjeta', 'error');
+    }
+});
+
+// ========== JUEGO: REORDENAR ==========
+function initReorderGame() {
+    const slotsContainer = document.querySelector('#reorder-slots');
+    const itemsContainer = document.querySelector('#reorder-items');
+    if (!slotsContainer || !itemsContainer) return;
+    
+    slotsContainer.innerHTML = '';
+    itemsContainer.innerHTML = '';
+    
+    // Crear slots ordenados
+    state.reorderState.correctOrder.forEach((num, index) => {
+        const slot = document.createElement('div');
+        slot.className = 'reorder-slot';
+        slot.setAttribute('data-position', index);
+        slot.setAttribute('data-number', num);
+        slot.setAttribute('aria-label', `Posición ${index + 1} para número ${num}`);
+        slot.textContent = index + 1;
+        
+        slot.addEventListener('dragover', handleReorderDragOver);
+        slot.addEventListener('drop', handleReorderDrop);
+        slot.addEventListener('dragenter', handleReorderDragEnter);
+        slot.addEventListener('dragleave', handleReorderDragLeave);
+        
+        slotsContainer.appendChild(slot);
+    });
+    
+    // Crear números mezclados
+    const shuffled = [...NUMBERS].sort(() => Math.random() - 0.5);
+    state.reorderState.items = shuffled;
+    
+    shuffled.forEach((num, index) => {
+        const item = document.createElement('div');
+        item.className = 'reorder-item';
+        item.setAttribute('draggable', 'true');
+        item.setAttribute('data-number', num);
+        item.setAttribute('data-index', index);
+        item.setAttribute('aria-label', `Número ${num}`);
+        item.textContent = num;
+        
+        item.addEventListener('dragstart', handleReorderDragStart);
+        item.addEventListener('dragend', handleReorderDragEnd);
+        
+        // Soporte táctil
+        addTouchSupport(
+            item,
+            (e, touch) => {
+                const it = e.target.closest('.reorder-item');
+                if (it.classList.contains('placed')) return;
+                state.touchState.draggedElement = it;
+                it.classList.add('dragging');
+            },
+            (e, touch, deltaX, deltaY) => {
+                const it = state.touchState.draggedElement;
+                if (it) {
+                    it.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                    it.style.opacity = '0.7';
+                    
+                    const elementBelow = getElementAtPoint(touch.clientX, touch.clientY);
+                    const slot = elementBelow?.closest('.reorder-slot');
+                    document.querySelectorAll('.reorder-slot').forEach(s => {
+                        s.classList.remove('drag-over');
+                    });
+                    if (slot && !slot.classList.contains('filled')) {
+                        slot.classList.add('drag-over');
+                    }
+                }
+            },
+            (e, touch) => {
+                const it = state.touchState.draggedElement;
+                if (it) {
+                    it.classList.remove('dragging');
+                    it.style.opacity = '';
+                }
+            },
+            (e, touch, elementBelow) => {
+                const it = state.touchState.draggedElement;
+                if (!it) return;
+                
+                const slot = elementBelow?.closest('.reorder-slot');
+                if (slot) {
+                    const draggedNumber = parseInt(it.getAttribute('data-number'));
+                    const slotNumber = parseInt(slot.getAttribute('data-number'));
+                    const slotPosition = parseInt(slot.getAttribute('data-position'));
+                    const expectedNumber = state.reorderState.correctOrder[slotPosition];
+                    
+                    if (draggedNumber === expectedNumber) {
+                        slot.classList.add('filled');
+                        slot.innerHTML = draggedNumber;
+                        slot.style.fontSize = '3rem';
+                        slot.style.fontWeight = 'bold';
+                        slot.style.color = 'var(--accent-green)';
+                        
+                        it.classList.add('placed');
+                        it.setAttribute('draggable', 'false');
+                        it.style.opacity = '0.3';
+                        
+                        state.reorderState.placed.set(slotPosition, draggedNumber);
+                        state.scores.reorder = state.reorderState.placed.size;
+                        updateScore('reorder', state.scores.reorder);
+                        
+                        showFeedback('reorder-feedback', `¡Correcto! Número ${draggedNumber} en posición ${slotPosition + 1}`, 'success');
+                        
+                        if (state.scores.reorder === 9) {
+                            setTimeout(() => showSuccessModal(), 1500);
+                        }
+                    } else {
+                        showFeedback('reorder-feedback', 'Inténtalo de nuevo', 'error');
+                        slot.classList.add('shake');
+                        setTimeout(() => slot.classList.remove('shake'), 500);
+                    }
+                    
+                    slot.classList.remove('drag-over');
+                }
+                
+                state.touchState.draggedElement = null;
+            }
+        );
+        
+        itemsContainer.appendChild(item);
+    });
+}
+
+function handleReorderDragStart(e) {
+    const item = e.target.closest('.reorder-item');
+    if (!item || item.classList.contains('placed')) {
+        e.preventDefault();
+        return;
+    }
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.getAttribute('data-number'));
+}
+
+function handleReorderDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+function handleReorderDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleReorderDragEnter(e) {
+    e.preventDefault();
+    const slot = e.target.closest('.reorder-slot');
+    if (slot && !slot.classList.contains('filled')) {
+        slot.classList.add('drag-over');
+    }
+}
+
+function handleReorderDragLeave(e) {
+    const slot = e.target.closest('.reorder-slot');
+    if (slot) {
+        slot.classList.remove('drag-over');
+    }
+}
+
+function handleReorderDrop(e) {
+    e.preventDefault();
+    const slot = e.target.closest('.reorder-slot');
+    if (!slot) return;
+    
+    slot.classList.remove('drag-over');
+    
+    const draggedNumber = parseInt(e.dataTransfer.getData('text/plain'));
+    const slotPosition = parseInt(slot.getAttribute('data-position'));
+    const expectedNumber = state.reorderState.correctOrder[slotPosition];
+    
+    const item = document.querySelector(`.reorder-item[data-number="${draggedNumber}"]:not(.placed)`);
+    
+    if (!item) return;
+    
+    if (draggedNumber === expectedNumber) {
+        slot.classList.add('filled');
+        slot.innerHTML = draggedNumber;
+        slot.style.fontSize = '3rem';
+        slot.style.fontWeight = 'bold';
+        slot.style.color = 'var(--accent-green)';
+        
+        item.classList.add('placed');
+        item.setAttribute('draggable', 'false');
+        item.style.opacity = '0.3';
+        
+        state.reorderState.placed.set(slotPosition, draggedNumber);
+        state.scores.reorder = state.reorderState.placed.size;
+        updateScore('reorder', state.scores.reorder);
+        
+        showFeedback('reorder-feedback', `¡Correcto! Número ${draggedNumber}`, 'success');
+        
+        if (state.scores.reorder === 9) {
+            setTimeout(() => showSuccessModal(), 1500);
+        }
+    } else {
+        showFeedback('reorder-feedback', 'Inténtalo de nuevo', 'error');
+        slot.classList.add('shake');
+        setTimeout(() => slot.classList.remove('shake'), 500);
+    }
+}
+
+function resetReorderGame() {
+    state.reorderState.placed.clear();
+    state.scores.reorder = 0;
+    updateScore('reorder', 0);
+    
+    const slotsContainer = document.querySelector('#reorder-slots');
+    const itemsContainer = document.querySelector('#reorder-items');
+    
+    if (slotsContainer) {
+        slotsContainer.querySelectorAll('.reorder-slot').forEach(slot => {
+            slot.classList.remove('filled', 'drag-over');
+            const pos = parseInt(slot.getAttribute('data-position'));
+            slot.innerHTML = pos + 1;
+            slot.style.fontSize = '';
+            slot.style.fontWeight = '';
+            slot.style.color = '';
+        });
+    }
+    
+    if (itemsContainer) {
+        itemsContainer.querySelectorAll('.reorder-item').forEach(item => {
+            item.classList.remove('placed', 'dragging');
+            item.setAttribute('draggable', 'true');
+            item.style.opacity = '';
+        });
+        
+        // Mezclar de nuevo
+        const itemsArray = Array.from(itemsContainer.children);
+        itemsArray.sort(() => Math.random() - 0.5);
+        itemsArray.forEach(item => itemsContainer.appendChild(item));
+    }
+    
+    initReorderGame();
+    clearFeedback('reorder-feedback');
 }
 
 // Prevenir comportamiento por defecto en drag

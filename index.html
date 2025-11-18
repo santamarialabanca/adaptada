@@ -13,9 +13,7 @@
         <div class="container">
             <header class="header">
                 <h1 class="title">
-                    <i class="fas fa-star"></i>
                     Aprende los Números
-                    <i class="fas fa-star"></i>
                 </h1>
                 <p class="subtitle">Elige un juego para comenzar</p>
             </header>
@@ -68,6 +66,56 @@
                     <div class="button-content">
                         <h2>Vocales y Consonantes</h2>
                         <p>Aprende las vocales y consonantes</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="wheel" aria-label="Rueda aleatoria">
+                    <div class="button-icon">
+                        <i class="fas fa-dharmachakra"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Rueda Aleatoria</h2>
+                        <p>Gira la rueda y encuentra el número</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="sheep" aria-label="Cada oveja con su pareja">
+                    <div class="button-icon">
+                        <i class="fas fa-sheep"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Cada Oveja con su Pareja</h2>
+                        <p>Toca la respuesta correcta</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="boxes" aria-label="Abrecajas">
+                    <div class="button-icon">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Abrecajas</h2>
+                        <p>Toca las cajas para descubrir números</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="flashcards" aria-label="Tarjetas flash">
+                    <div class="button-icon">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Tarjetas Flash</h2>
+                        <p>Ponte a prueba con números</p>
+                    </div>
+                </button>
+
+                <button class="game-button" data-game="reorder" aria-label="Reordenar números">
+                    <div class="button-icon">
+                        <i class="fas fa-sort-numeric-down"></i>
+                    </div>
+                    <div class="button-content">
+                        <h2>Reordenar</h2>
+                        <p>Ordena los números del 1 al 9</p>
                     </div>
                 </button>
             </div>
@@ -135,7 +183,7 @@
 
             <div class="game-instructions">
                 <i class="fas fa-info-circle"></i>
-                <p>Toca un número de la izquierda y luego el mismo número de la derecha para unirlos</p>
+                <p>Mantén presionado un número y arrastra tu dedo hasta el mismo número del otro lado para dibujar la línea</p>
             </div>
 
         <div class="connect-game-container">
@@ -274,6 +322,175 @@
         </div>
 
         <div class="feedback-message" id="letters-feedback"></div>
+    </div>
+
+    <!-- Juego: Rueda Aleatoria -->
+    <div id="game-wheel" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Rueda Aleatoria</h2>
+            <div class="score-display">
+                <span id="wheel-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Toca la rueda para girarla y encuentra el número que aparece</p>
+        </div>
+
+        <div class="wheel-game-container">
+            <div class="wheel-wrapper">
+                <svg id="wheel-svg" class="wheel-svg" viewBox="0 0 400 400">
+                    <!-- La rueda se genera dinámicamente -->
+                </svg>
+                <div class="wheel-pointer"></div>
+            </div>
+            <div class="wheel-result" id="wheel-result">
+                <div class="result-number">?</div>
+                <p>Toca la rueda para comenzar</p>
+            </div>
+            <div class="wheel-target" id="wheel-target">
+                <h3>Busca el número:</h3>
+                <div class="target-number" id="target-number-display">1</div>
+            </div>
+        </div>
+
+        <div class="feedback-message" id="wheel-feedback"></div>
+    </div>
+
+    <!-- Juego: Cada Oveja con su Pareja -->
+    <div id="game-sheep" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Cada Oveja con su Pareja</h2>
+            <div class="score-display">
+                <span id="sheep-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Toca la respuesta correcta para eliminarla. Repite hasta que todas se hayan ido</p>
+        </div>
+
+        <div class="sheep-game-container">
+            <div class="sheep-question" id="sheep-question">
+                <!-- La pregunta se genera dinámicamente -->
+            </div>
+            <div class="sheep-answers" id="sheep-answers">
+                <!-- Las respuestas se generan dinámicamente -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="sheep-feedback"></div>
+    </div>
+
+    <!-- Juego: Abrecajas -->
+    <div id="game-boxes" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Abrecajas</h2>
+            <div class="score-display">
+                <span id="boxes-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Toca cada caja para abrirla y descubrir el número que hay dentro</p>
+        </div>
+
+        <div class="boxes-game-container">
+            <div class="boxes-grid" id="boxes-grid">
+                <!-- Las cajas se generan dinámicamente -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="boxes-feedback"></div>
+    </div>
+
+    <!-- Juego: Tarjetas Flash -->
+    <div id="game-flashcards" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Tarjetas Flash</h2>
+            <div class="score-display">
+                <span id="flashcards-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Toca la tarjeta para voltearla y ver la respuesta</p>
+        </div>
+
+        <div class="flashcards-game-container">
+            <div class="flashcard-wrapper">
+                <div class="flashcard" id="flashcard">
+                    <div class="flashcard-front">
+                        <div class="flashcard-question" id="flashcard-question">
+                            <!-- La pregunta se genera dinámicamente -->
+                        </div>
+                    </div>
+                    <div class="flashcard-back">
+                        <div class="flashcard-answer" id="flashcard-answer">
+                            <!-- La respuesta se genera dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flashcard-controls">
+                <button class="flashcard-button" id="flashcard-next">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>Siguiente</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="feedback-message" id="flashcards-feedback"></div>
+    </div>
+
+    <!-- Juego: Reordenar -->
+    <div id="game-reorder" class="screen">
+        <div class="game-header">
+            <button class="back-button" aria-label="Volver al menú">
+                <i class="fas fa-arrow-left"></i>
+                <span>Menú</span>
+            </button>
+            <h2>Reordenar Números</h2>
+            <div class="score-display">
+                <span id="reorder-score">0</span> / 9
+            </div>
+        </div>
+
+        <div class="game-instructions">
+            <i class="fas fa-info-circle"></i>
+            <p>Arrastra los números para ordenarlos del 1 al 9</p>
+        </div>
+
+        <div class="reorder-game-container">
+            <div class="reorder-slots" id="reorder-slots">
+                <!-- Los slots se generan dinámicamente -->
+            </div>
+            <div class="reorder-items" id="reorder-items">
+                <!-- Los números se generan dinámicamente -->
+            </div>
+        </div>
+
+        <div class="feedback-message" id="reorder-feedback"></div>
     </div>
 
     <!-- Mensaje de éxito -->
