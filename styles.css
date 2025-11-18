@@ -550,7 +550,7 @@ body::before {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 60px;
+    gap: 100px;
     margin-bottom: 30px;
     padding: 20px;
     min-height: auto;
